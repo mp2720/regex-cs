@@ -2,65 +2,6 @@ using Parse;
 
 namespace Regex
 {
-    /// <summary>
-    /// Range of 8-bit characters [From..To].
-    /// </summary>
-    public record CharRange(char From, char To) { }
-
-    public record CharClass(List<CharRange> Ranges, bool Inverted = false)
-    {
-        public static CharClass All()
-        {
-            return new CharClass([], true);
-        }
-
-        public static CharClass SingleChar(char c)
-        {
-            return new CharClass([new(c, c)]);
-        }
-
-        public static CharClass List(params char[] chs)
-        {
-            var ranges = new List<CharRange>();
-            foreach (char c in chs)
-                ranges.Add(new CharRange(c, c));
-            return new CharClass(ranges);
-        }
-    }
-
-    /// <summary>
-    /// Directed transition between two NFA states.
-    /// </summary>
-    /// <param name="Condition">
-    /// Null if transition is unconditional
-    /// </summary>
-    public record NFATrans(CharClass? Condition, NFAState To) { }
-
-    public class NFAState
-    {
-        public int Index { get; init; }
-        public List<NFATrans> Transitions { get; } = [];
-
-        public NFAState(int index)
-        {
-            Index = index;
-        }
-
-        public void Transition(CharClass condition, NFAState to)
-        {
-            Transitions.Add(new NFATrans(condition, to));
-        }
-
-        /// <summary>
-        /// Make epsilon transition.
-        /// </summary>
-        public void Transition(NFAState to)
-        {
-            Transitions.Add(new NFATrans(null, to));
-        }
-    }
-
-    public record NFA(NFAState Start, NFAState End, IReadOnlyList<NFAState> states) { }
 
     public class RegexToNFA
     {
@@ -69,9 +10,9 @@ namespace Regex
         /// <summary>
         /// Table of 256 classes, i-th represents encoded by \i and could be null.
         /// </summary>
-        private CharClass[] BuiltinClassesTable { get; init; }
+        private NFA.CharClass[] BuiltinClassesTable { get; init; }
 
-        private List<NFAState> states = new List<NFAState>();
+        private List<NFA.State> states = new List<NFA.State>();
 
         /// <summary>
         ///     Construct a new regex to NFA converter. Only ASCII characters are allowed.
@@ -80,18 +21,18 @@ namespace Regex
         ///     Builtin classes should not use names (,),[,],+,*,?,.,&#92;,x,X,^,|,-,n,0,r,t,a,b,v,
         ///     since those are reserved for escape sequences.
         /// </param>
-        public RegexToNFA(List<(char, CharClass)> builtinClasses)
+        public RegexToNFA(List<(char, NFA.CharClass)> builtinClasses)
         {
-            BuiltinClassesTable = new CharClass[256];
+            BuiltinClassesTable = new NFA.CharClass[256];
             foreach (var cl in builtinClasses)
                 BuiltinClassesTable[(int)cl.Item1] = cl.Item2;
         }
 
         // Call when sub-expression is determined since those states are collected to be returned
         // as a conversion result!
-        private NFAState newState()
+        private NFA.State newState()
         {
-            var state = new NFAState(stateIndex++);
+            var state = new NFA.State(stateIndex++);
             states.Add(state);
             return state;
         }
@@ -139,7 +80,7 @@ namespace Regex
             );
         }
 
-        private CharRange CharRange(Parser p)
+        private NFA.CharRange CharRange(Parser p)
         {
             char start = CharRangeBoundary(p);
             var end = p.Optional(p =>
@@ -148,17 +89,17 @@ namespace Regex
                 return CharRangeBoundary(p);
             });
             if (end.Set)
-                return new CharRange(start, end.Value);
+                return new NFA.CharRange(start, end.Value);
             else
-                return new CharRange(start, start);
+                return new NFA.CharRange(start, start);
         }
 
-        private CharClass CharClass(Parser p)
+        private NFA.CharClass CharClass(Parser p)
         {
             p.Char('[');
             var exceptFlag = p.Optional(p => p.Char('^'));
 
-            var ranges = new List<CharRange>() { CharRange(p) }; // at least one is expected
+            var ranges = new List<NFA.CharRange>() { CharRange(p) }; // at least one is expected
             while (true)
             {
                 var range = p.Optional(CharRange);
@@ -169,17 +110,17 @@ namespace Regex
 
             p.Char(']');
 
-            return new CharClass(ranges, exceptFlag.Set);
+            return new NFA.CharClass(ranges, exceptFlag.Set);
         }
 
-        private CharClass CharMatch(Parser p)
+        private NFA.CharClass CharMatch(Parser p)
         {
             return p.Or(
                 CharClass, // Ex.: [a-bZ]
                 p => // Dot
                 {
                     p.Char('.');
-                    return Regex.CharClass.All();
+                    return NFA.CharClass.All();
                 },
                 p => // builtin class
                 {
@@ -193,7 +134,7 @@ namespace Regex
                         p =>
                         {
                             char c = Escaped(p);
-                            return Regex.CharClass.SingleChar(c);
+                            return NFA.CharClass.SingleChar(c);
                         }
                     );
                 },
@@ -202,12 +143,12 @@ namespace Regex
                     char c = p.Char(c => 0x20 <= c && c <= 0x7e
                          && c != '\\' && c != '*' && c != '?' && c != ')' && c != '|'
                          && c != '+' && c != '[' && c != ']' && c != '(' && c != '.');
-                    return Regex.CharClass.SingleChar(c);
+                    return NFA.CharClass.SingleChar(c);
                 }
             );
         }
 
-        private (NFAState s, NFAState e) Atom(Parser p)
+        private (NFA.State s, NFA.State e) Atom(Parser p)
         {
             return p.Or(
                 p =>
@@ -229,7 +170,7 @@ namespace Regex
             );
         }
 
-        private (NFAState s, NFAState e) AtomQuantified(Parser p)
+        private (NFA.State s, NFA.State e) AtomQuantified(Parser p)
         {
             var (s, e) = Atom(p);
             return p.Or(
@@ -278,7 +219,7 @@ namespace Regex
             );
         }
 
-        private (NFAState s, NFAState e) Concat(Parser p)
+        private (NFA.State s, NFA.State e) Concat(Parser p)
         {
             var (s, e) = AtomQuantified(p);
             while (true)
@@ -296,7 +237,7 @@ namespace Regex
             return (s, e);
         }
 
-        private (NFAState, NFAState) Alternative(Parser p)
+        private (NFA.State, NFA.State) Alternative(Parser p)
         {
             var (s1, e1) = Concat(p);
             var opt = p.Optional(p =>
@@ -322,13 +263,13 @@ namespace Regex
             return (s, e);
         }
 
-        public NFA Convert(string expr)
+        public NFA.Automaton Convert(string expr)
         {
             states.Clear();
             stateIndex = 0;
             var p = new Parser(expr, 0);
             var (s, e) = Alternative(p);
-            return new NFA(s, e, states.AsReadOnly());
+            return new NFA.Automaton(s, e, states.AsReadOnly());
         }
     }
 }

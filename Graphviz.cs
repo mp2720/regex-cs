@@ -6,7 +6,7 @@ namespace Regex.Graphviz
     {
         private HashSet<int> visitedIndices = new HashSet<int>();
 
-        private string ConvertCharClass(CharClass? cl)
+        private string ConvertCharClass(NFA.CharClass? cl)
         {
             if (cl == null)
                 return "ε";
@@ -28,7 +28,7 @@ namespace Regex.Graphviz
             return sb.ToString();
         }
 
-        private void ConvertState(TextWriter w, NFAState state)
+        private void ConvertState(TextWriter w, NFA.State state)
         {
             if (visitedIndices.Contains(state.Index))
                 return;
@@ -36,7 +36,7 @@ namespace Regex.Graphviz
 
             foreach (var trans in state.Transitions)
             {
-                NFAState child = trans.To;
+                NFA.State child = trans.To;
                 w.WriteLine($"{state.Index} -> {child.Index} [label=\"{ConvertCharClass(trans.Condition)}\"];");
 
                 if (!visitedIndices.Contains(child.Index))
@@ -44,7 +44,7 @@ namespace Regex.Graphviz
             }
         }
 
-        public void Convert(TextWriter w, NFA nfa)
+        public void Convert(TextWriter w, NFA.Automaton nfa)
         {
             visitedIndices.Clear();
             w.WriteLine("digraph {");
