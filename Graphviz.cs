@@ -44,13 +44,14 @@ namespace Regex.Graphviz
             }
         }
 
-        public void Convert(TextWriter w, NFAState first, NFAState last)
+        public void Convert(TextWriter w, NFA nfa)
         {
+            visitedIndices.Clear();
             w.WriteLine("digraph {");
-            w.WriteLine($"node [shape=doublecircle]; {first.Index} {last.Index};");
+            w.WriteLine($"node [shape=doublecircle]; {nfa.Start.Index} {nfa.End.Index};");
             w.WriteLine($"node [shape=circle];");
             w.WriteLine("rankdir=LR;");
-            ConvertState(w, first);
+            ConvertState(w, nfa.Start);
             w.WriteLine("}");
         }
     }

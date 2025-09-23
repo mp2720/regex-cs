@@ -60,6 +60,8 @@ namespace Regex
         }
     }
 
+    public record NFA(NFAState Start, NFAState End, IReadOnlyList<NFAState> states) { }
+
     public class RegexToNFA
     {
         private int stateIndex = 0;
@@ -68,6 +70,8 @@ namespace Regex
         /// Table of 256 classes, i-th represents encoded by \i and could be null.
         /// </summary>
         private CharClass[] BuiltinClassesTable { get; init; }
+
+        private List<NFAState> states = new List<NFAState>();
 
         /// <summary>
         ///     Construct a new regex to NFA converter. Only ASCII characters are allowed.
@@ -83,9 +87,13 @@ namespace Regex
                 BuiltinClassesTable[(int)cl.Item1] = cl.Item2;
         }
 
+        // Call when sub-expression is determined since those states are collected to be returned
+        // as a conversion result!
         private NFAState newState()
         {
-            return new NFAState(stateIndex++);
+            var state = new NFAState(stateIndex++);
+            states.Add(state);
+            return state;
         }
 
         private char HexDigit(Parser p) =>
@@ -314,10 +322,13 @@ namespace Regex
             return (s, e);
         }
 
-        public (NFAState start, NFAState end) Convert(string expr)
+        public NFA Convert(string expr)
         {
+            states.Clear();
+            stateIndex = 0;
             var p = new Parser(expr, 0);
-            return Alternative(p);
+            var (s, e) = Alternative(p);
+            return new NFA(s, e, states.AsReadOnly());
         }
     }
 }
