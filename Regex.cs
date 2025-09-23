@@ -268,8 +268,12 @@ namespace Regex
             states.Clear();
             stateIndex = 0;
             var p = new Parser(expr, 0);
-            var (s, e) = Alternative(p);
-            return new NFA.Automaton(s, e, states.AsReadOnly());
+
+            var (start, end) = Alternative(p);
+
+            var sink = newState();
+            end.Transition(sink);
+            return new NFA.Automaton(start, sink, states.AsReadOnly());
         }
     }
 }

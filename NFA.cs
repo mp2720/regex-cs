@@ -58,5 +58,5 @@ namespace Regex.NFA
         }
     }
 
-    public record Automaton(State Start, State End, IReadOnlyList<State> states) { }
+    public record Automaton(State Source, State Sink, IReadOnlyList<State> States) { }
 }

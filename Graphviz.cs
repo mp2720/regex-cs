@@ -48,10 +48,10 @@ namespace Regex.Graphviz
         {
             visitedIndices.Clear();
             w.WriteLine("digraph {");
-            w.WriteLine($"node [shape=doublecircle]; {nfa.Start.Index} {nfa.End.Index};");
+            w.WriteLine($"node [shape=doublecircle]; {nfa.Source.Index} {nfa.Sink.Index};");
             w.WriteLine($"node [shape=circle];");
             w.WriteLine("rankdir=LR;");
-            ConvertState(w, nfa.Start);
+            ConvertState(w, nfa.Source);
             w.WriteLine("}");
         }
     }
