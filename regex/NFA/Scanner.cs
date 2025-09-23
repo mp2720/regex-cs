@@ -4,28 +4,17 @@ namespace Regex.NFA
     /// Primitive Thompson-style NFA scanner. Each step transitions to all possible states are processed.
     /// Thus the runtime performance is O(m*n) (m - size of NFA, n - size of input).
     /// </summary>
-    public class Scanner
+    public class Scanner(Automaton nfa)
     {
-        private class ScanState
+        private class ScanState(State state, int byteIndex)
         {
-            public readonly State state;
-            public int byteIndex = 0;
-
-            public ScanState(State state, int byteIndex)
-            {
-                this.state = state;
-                this.byteIndex = byteIndex;
-            }
+            public readonly State state = state;
+            public int byteIndex = byteIndex;
         }
 
-        private readonly Automaton nfa;
+        private readonly Automaton nfa = nfa;
 
-        public Scanner(Automaton nfa)
-        {
-            this.nfa = nfa;
-        }
-
-        private bool DoMatch(byte c, CharClass cl)
+        private static bool DoMatch(byte c, CharClass cl)
         {
             bool matchesRanges = cl.Ranges.Any(range => range.From <= c && c <= range.To);
             return matchesRanges == !cl.Inverted;

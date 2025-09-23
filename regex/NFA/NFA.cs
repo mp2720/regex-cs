@@ -34,15 +34,10 @@ namespace Regex.NFA
     /// </summary>
     public record Trans(CharClass? Condition, State To) { }
 
-    public class State
+    public class State(int index)
     {
-        public int Index { get; init; }
+        public int Index { get; init; } = index;
         public List<Trans> Transitions { get; } = [];
-
-        public State(int index)
-        {
-            Index = index;
-        }
 
         public void Transition(CharClass condition, State to)
         {

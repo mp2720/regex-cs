@@ -1,13 +1,13 @@
 using System.Diagnostics;
 
-namespace Parse
+namespace Regex.Parser
 {
     public struct Maybe<T>
     {
         private T _value;
         public T Value
         {
-            get
+            readonly get
             {
                 if (!Set)
                     throw new InvalidOperationException("Optional value is empty");
@@ -30,19 +30,19 @@ namespace Parse
 
     public class InvalidSyntaxException : Exception
     {
-        public InvalidSyntaxException(Parser p) : base($"Invalid syntax at character {p.Index}") { }
+        public InvalidSyntaxException(StringParser p) : base($"Invalid syntax at character {p.Index}") { }
         public InvalidSyntaxException(string reason) : base($"Invalid syntax: {reason}") { }
     }
 
-    public record Parser
+    public record StringParser
     {
         public String Text { get; private set; }
         public int Index { get; private set; }
 
-        public Parser(String text, int index)
+        public StringParser(String text, int index)
         {
-            this.Text = text;
-            this.Index = index;
+            Text = text;
+            Index = index;
         }
 
         /// <summary>
@@ -52,7 +52,7 @@ namespace Parse
         /// (thus no devastating backtracking is possible).
         /// If none matched, Or fails.
         /// </summary>
-        public T Or<T>(params Func<Parser, T>[] parseFuncs)
+        public T Or<T>(params Func<StringParser, T>[] parseFuncs)
         {
             int savedIndex = Index;
             for (int i = 0; i < parseFuncs.Length; ++i)
@@ -106,7 +106,7 @@ namespace Parse
         /// Adapter from <c>InvalidSyntaxException</c> to <c>Maybe</c>.
         /// Does not backtrack (except the cases when only one character was read).
         /// </summary>
-        public Maybe<T> Optional<T>(Func<Parser, T> parseFunc)
+        public Maybe<T> Optional<T>(Func<StringParser, T> parseFunc)
         {
             int savedIndex = Index;
             try

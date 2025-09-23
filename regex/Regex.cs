@@ -1,4 +1,4 @@
-using Parse;
+using Regex.Parser;
 
 namespace Regex
 {
@@ -12,7 +12,7 @@ namespace Regex
         /// </summary>
         private NFA.CharClass[] BuiltinClassesTable { get; init; }
 
-        private List<NFA.State> states = new List<NFA.State>();
+        private readonly List<NFA.State> states = [];
 
         /// <summary>
         ///     Construct a new regex to NFA converter. Only ASCII characters are allowed.
@@ -25,32 +25,32 @@ namespace Regex
         {
             BuiltinClassesTable = new NFA.CharClass[256];
             foreach (var cl in builtinClasses)
-                BuiltinClassesTable[(int)cl.Item1] = cl.Item2;
+                BuiltinClassesTable[cl.Item1] = cl.Item2;
         }
 
         // Call when sub-expression is determined since those states are collected to be returned
         // as a conversion result!
-        private NFA.State newState()
+        private NFA.State NewState()
         {
             var state = new NFA.State(stateIndex++);
             states.Add(state);
             return state;
         }
 
-        private char HexDigit(Parser p) =>
+        private static char HexDigit(StringParser p) =>
             (char)p.Or(
                 p => p.Char(c => '0' <= c && c <= '9') - '0',
                 p => p.Char(c => 'a' <= c && c <= 'f') - 'a',
                 p => p.Char(c => 'A' <= c && c <= 'F') - 'A'
             );
 
-        private char HexByte(Parser p)
+        private static char HexByte(StringParser p)
         {
             return (char)(HexDigit(p) * 16 + HexDigit(p));
         }
 
         // without \
-        private char Escaped(Parser p)
+        private static char Escaped(StringParser p)
         {
             char c = p.Char();
             return c switch
@@ -68,7 +68,7 @@ namespace Regex
             };
         }
 
-        private char CharRangeBoundary(Parser p)
+        private static char CharRangeBoundary(StringParser p)
         {
             return p.Or(
                 p =>
@@ -80,7 +80,7 @@ namespace Regex
             );
         }
 
-        private NFA.CharRange CharRange(Parser p)
+        private NFA.CharRange CharRange(StringParser p)
         {
             char start = CharRangeBoundary(p);
             var end = p.Optional(p =>
@@ -94,7 +94,7 @@ namespace Regex
                 return new NFA.CharRange(start, start);
         }
 
-        private NFA.CharClass CharClass(Parser p)
+        private NFA.CharClass CharClass(StringParser p)
         {
             p.Char('[');
             var exceptFlag = p.Optional(p => p.Char('^'));
@@ -113,7 +113,7 @@ namespace Regex
             return new NFA.CharClass(ranges, exceptFlag.Set);
         }
 
-        private NFA.CharClass CharMatch(Parser p)
+        private NFA.CharClass CharMatch(StringParser p)
         {
             return p.Or(
                 CharClass, // Ex.: [a-bZ]
@@ -148,7 +148,7 @@ namespace Regex
             );
         }
 
-        private (NFA.State s, NFA.State e) Atom(Parser p)
+        private (NFA.State s, NFA.State e) Atom(StringParser p)
         {
             return p.Or(
                 p =>
@@ -162,15 +162,15 @@ namespace Regex
                 {
                     // s --------> e
                     var c = CharMatch(p);
-                    var s = newState();
-                    var e = newState();
+                    var s = NewState();
+                    var e = NewState();
                     s.Transition(c, e);
                     return (s, e);
                 }
             );
         }
 
-        private (NFA.State s, NFA.State e) AtomQuantified(Parser p)
+        private (NFA.State s, NFA.State e) AtomQuantified(StringParser p)
         {
             var (s, e) = Atom(p);
             return p.Or(
@@ -181,7 +181,7 @@ namespace Regex
                     //   \              |
                     //    *-------------*
                     p.Char('?');
-                    var e1 = newState();
+                    var e1 = NewState();
                     e.Transition(e1);
                     s.Transition(e1);
                     return (s, e1);
@@ -193,7 +193,7 @@ namespace Regex
                     //  \              /
                     //   *------------*
                     p.Char('+');
-                    var e1 = newState();
+                    var e1 = NewState();
                     e.Transition(e1);
                     e1.Transition(s);
                     return (s, e);
@@ -207,8 +207,8 @@ namespace Regex
                     //     \               /   
                     //      *-------------*
                     p.Char('*');
-                    var s1 = newState();
-                    var e1 = newState();
+                    var s1 = NewState();
+                    var e1 = NewState();
                     s1.Transition(s);
                     s1.Transition(e1);
                     e.Transition(e1);
@@ -219,7 +219,7 @@ namespace Regex
             );
         }
 
-        private (NFA.State s, NFA.State e) Concat(Parser p)
+        private (NFA.State s, NFA.State e) Concat(StringParser p)
         {
             var (s, e) = AtomQuantified(p);
             while (true)
@@ -237,7 +237,7 @@ namespace Regex
             return (s, e);
         }
 
-        private (NFA.State, NFA.State) Alternative(Parser p)
+        private (NFA.State, NFA.State) Alternative(StringParser p)
         {
             var (s1, e1) = Concat(p);
             var opt = p.Optional(p =>
@@ -254,8 +254,8 @@ namespace Regex
             // s --> s2 -> ... -> e2 ---*
 
             var (s2, e2) = opt.Value;
-            var s = newState();
-            var e = newState();
+            var s = NewState();
+            var e = NewState();
             s.Transition(s1);
             s.Transition(s2);
             e1.Transition(e);
@@ -267,11 +267,11 @@ namespace Regex
         {
             states.Clear();
             stateIndex = 0;
-            var p = new Parser(expr, 0);
+            var p = new StringParser(expr, 0);
 
             var (start, end) = Alternative(p);
 
-            var sink = newState();
+            var sink = NewState();
             end.Transition(sink);
             return new NFA.Automaton(start, sink, states.AsReadOnly());
         }

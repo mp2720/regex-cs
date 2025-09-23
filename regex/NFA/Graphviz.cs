@@ -1,12 +1,12 @@
 using System.Text;
 
-namespace Regex.Graphviz
+namespace Regex.NFA
 {
-    public class NFAToGraphviz
+    public class GraphvizGenerator
     {
-        private HashSet<int> visitedIndices = new HashSet<int>();
+        private readonly HashSet<int> visitedIndices = [];
 
-        private string ConvertCharClass(NFA.CharClass? cl)
+        private static string ConvertCharClass(CharClass? cl)
         {
             if (cl == null)
                 return "ε";
