@@ -293,6 +293,7 @@ namespace Regex
             var p = new StringParser(expr, 0);
 
             var (start, end) = Alternative(p);
+            p.EOF();
 
             var sink = NewState();
             end.Transition(sink);

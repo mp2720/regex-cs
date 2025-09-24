@@ -49,11 +49,27 @@ public class UnitTest1
             else
                 Assert.True(scan.Match(ToASCII(c.ToString())));
         }
+    }
 
+    [Fact]
+    public void TestInvalidSyntax()
+    {
         Assert.Throws<InvalidSyntaxException>(() => MakeScanner("[2-1]"));
         Assert.Throws<InvalidSyntaxException>(() => MakeScanner("[]"));
         Assert.Throws<InvalidSyntaxException>(() => MakeScanner("]]"));
         Assert.Throws<InvalidSyntaxException>(() => MakeScanner("["));
         Assert.Throws<InvalidSyntaxException>(() => MakeScanner("[1-]"));
+        Assert.Throws<InvalidSyntaxException>(() => MakeScanner("a|"));
+        Assert.Throws<InvalidSyntaxException>(() => MakeScanner("|b"));
+        Assert.Throws<InvalidSyntaxException>(() => MakeScanner("a++"));
+        Assert.Throws<InvalidSyntaxException>(() => MakeScanner("a+?"));
+        Assert.Throws<InvalidSyntaxException>(() => MakeScanner("a*+"));
+        Assert.Throws<InvalidSyntaxException>(() => MakeScanner("(a"));
+        Assert.Throws<InvalidSyntaxException>(() => MakeScanner("a)"));
+        Assert.Throws<InvalidSyntaxException>(() => MakeScanner("(()"));
+        Assert.Throws<InvalidSyntaxException>(() => MakeScanner("()"));
+
+        // Special test with junk after valid regex
+        Assert.Throws<InvalidSyntaxException>(() => MakeScanner("a+\\!junk!!!!"));
     }
 }

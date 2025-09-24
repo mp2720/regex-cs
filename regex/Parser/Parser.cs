@@ -103,6 +103,11 @@ namespace Regex.Parser
             return s;
         }
 
+        public void EOF() {
+            if (Index != Text.Length)
+                throw new InvalidSyntaxException(this, "junk at the end of input");
+        }
+
         /// <summary>
         /// Adapter from <c>InvalidSyntaxException</c> to <c>Maybe</c>.
         /// Does not backtrack (except the cases when only one character was read).
