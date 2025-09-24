@@ -6,6 +6,18 @@ namespace Regex.NFA
     {
         private readonly HashSet<int> visitedIndices = [];
 
+        private static string PrintEscapedChar(char c)
+        {
+            return c switch
+            {
+                '\"' => "\\\\",
+                '\r' => "\\\\r",
+                '\n' => "\\\\n",
+                _ when '\x20' <= c && c <= '\x7e' => c.ToString(),
+                _ => $"\\\\x{(int)c:x2}"
+            };
+        }
+
         private static string ConvertCharClass(CharClass? cl)
         {
             if (cl == null)
@@ -18,9 +30,9 @@ namespace Regex.NFA
             foreach (var range in cl.Ranges)
             {
                 if (range.From == range.To)
-                    sb.Append($"{range.From}");
+                    sb.Append($"{PrintEscapedChar(range.From)}");
                 else
-                    sb.Append($"{range.From}-{range.To}");
+                    sb.Append($"{PrintEscapedChar(range.From)}-{PrintEscapedChar(range.To)}");
             }
 
             sb.Append(']');
