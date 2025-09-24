@@ -40,8 +40,8 @@ namespace Regex
         private static char HexDigit(StringParser p) =>
             (char)p.Or(
                 p => p.Char(c => '0' <= c && c <= '9') - '0',
-                p => p.Char(c => 'a' <= c && c <= 'f') - 'a',
-                p => p.Char(c => 'A' <= c && c <= 'F') - 'A'
+                p => p.Char(c => 'a' <= c && c <= 'f') - 'a' + 10,
+                p => p.Char(c => 'A' <= c && c <= 'F') - 'A' + 10
             );
 
         private static char HexByte(StringParser p)
@@ -89,9 +89,15 @@ namespace Regex
                 return CharRangeBoundary(p);
             });
             if (end.Set)
+            {
+                if (start > end.Value)
+                    throw new InvalidSyntaxException(p, "invalid range boundaries");
                 return new NFA.CharRange(start, end.Value);
+            }
             else
+            {
                 return new NFA.CharRange(start, start);
+            }
         }
 
         private NFA.CharClass CharClass(StringParser p)

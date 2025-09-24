@@ -31,7 +31,8 @@ namespace Regex.Parser
     public class InvalidSyntaxException : Exception
     {
         public InvalidSyntaxException(StringParser p) : base($"Invalid syntax at character {p.Index}") { }
-        public InvalidSyntaxException(string reason) : base($"Invalid syntax: {reason}") { }
+        public InvalidSyntaxException(StringParser p, string reason)
+            : base($"Invalid syntax at character {p.Index}: {reason}") { }
     }
 
     public record StringParser
@@ -75,7 +76,7 @@ namespace Regex.Parser
         public char Char()
         {
             if (Index == Text.Length)
-                throw new InvalidSyntaxException("unexpected EOF");
+                throw new InvalidSyntaxException(this, "unexpected EOF");
             return Text[Index++];
         }
 
