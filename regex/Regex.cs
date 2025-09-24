@@ -28,6 +28,23 @@ namespace Regex
                 BuiltinClassesTable[cl.Item1] = cl.Item2;
         }
 
+        public static RegexToNFA WithDefaultBuiltinClasses()
+        {
+            NFA.CharClass
+                digits = new([new('0', '9')]),
+                wordChar = new([new('A', 'Z'), new('a', 'z'), new('0', '9'), new('_', '_')]),
+                space = NFA.CharClass.List(' ', '\n', '\r', '\t', '\v', '\f');
+            var classes = new List<(char, NFA.CharClass)>() {
+                ('d', digits),
+                ('D', digits.Invert()),
+                ('w', wordChar),
+                ('W', wordChar.Invert()),
+                ('s', space),
+                ('S', space.Invert())
+            };
+            return new(classes);
+        }
+
         // Call when sub-expression is determined since those states are collected to be returned
         // as a conversion result!
         private NFA.State NewState()

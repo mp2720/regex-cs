@@ -5,7 +5,7 @@ namespace Regex.NFA
     /// </summary>
     public record CharRange(char From, char To) { }
 
-    public record CharClass(List<CharRange> Ranges, bool Inverted = false)
+    public record CharClass(IReadOnlyList<CharRange> Ranges, bool Inverted = false)
     {
         public static CharClass All()
         {
@@ -23,6 +23,14 @@ namespace Regex.NFA
             foreach (char c in chs)
                 ranges.Add(new CharRange(c, c));
             return new CharClass(ranges);
+        }
+
+        /// <summary>
+        /// Return an inverted copy of this class.
+        /// </summary>
+        public CharClass Invert()
+        {
+            return new CharClass(Ranges, !Inverted);
         }
     }
 
