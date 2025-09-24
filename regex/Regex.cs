@@ -79,7 +79,6 @@ namespace Regex
                 'r' => '\r',
                 't' => '\t',
                 'a' => '\a',
-                'b' => '\b',
                 'v' => '\v',
                 _ => throw new InvalidSyntaxException(p),
             };
