@@ -1,4 +1,4 @@
-﻿namespace regex.Test;
+namespace regex.Test;
 
 using Regex;
 using Regex.Parser;
