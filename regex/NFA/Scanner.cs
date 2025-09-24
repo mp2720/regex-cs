@@ -20,6 +20,11 @@ namespace Regex.NFA
             return matchesRanges == !cl.Inverted;
         }
 
+        /// <summary>
+        /// Tests if the given string matches language defined by NFA.
+        /// Note that when string is converted to bytes using System.Text.Encoding.ASCII,
+        /// non-ASCII 8-bit characters (> 0x7f) are wrecked.
+        /// </summary>
         public bool Match(byte[] input)
         {
             var scanStates = new ScanState?[nfa.States.Count];
