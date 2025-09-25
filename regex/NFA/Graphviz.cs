@@ -58,12 +58,29 @@ namespace Regex.NFA
 
         public void Convert(TextWriter w, NFA.Automaton nfa)
         {
-            visitedIndices.Clear();
-            w.WriteLine("digraph {");
+            w.WriteLine("""
+            digraph G {
+            bgcolor="#181818";
+
+            node [
+              fontcolor = "#e6e6e6",
+              style = filled,
+              color = "#e6e6e6",
+              fillcolor = "#333333"
+            ]
+
+            edge [
+              color = "#e6e6e6",
+              fontcolor = "#e6e6e6"
+            ]
+            """);
             w.WriteLine($"node [shape=doublecircle]; {nfa.Source.Index} {nfa.Sink.Index};");
             w.WriteLine($"node [shape=circle];");
             w.WriteLine("rankdir=LR;");
+
+            visitedIndices.Clear();
             ConvertState(w, nfa.Source);
+
             w.WriteLine("}");
         }
     }
