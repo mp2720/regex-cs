@@ -102,12 +102,12 @@ namespace Regex.NFA
               fontcolor = "#e6e6e6"
             ]
             """);
-            w.WriteLine($"node [shape=doublecircle]; {nfa.Source.Index};");
             w.WriteLine($"node [shape=circle];");
             w.WriteLine("rankdir=LR;");
 
             visitedIndices.Clear();
-            ConvertState(w, null, nfa.Source);
+            foreach (var src in nfa.Sources)
+                ConvertState(w, null, src);
 
             w.WriteLine("}");
         }

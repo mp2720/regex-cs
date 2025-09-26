@@ -307,7 +307,7 @@ namespace Regex
             int index = 0;
             AssignIndexDFS(states, source, ref index);
 
-            return new NFA.Automaton(source, states);
+            return new NFA.Automaton([source], states);
         }
     }
 }

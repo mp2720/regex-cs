@@ -105,5 +105,5 @@ namespace Regex.NFA
     /// NFA automaton with ε-states.
     /// Note that source and sink states should be ε.
     /// </summary>
-    public record Automaton(State Source, IReadOnlyList<State> States) { }
+    public record Automaton(State[] Sources, IReadOnlyList<State> States) { }
 }
