@@ -40,19 +40,47 @@ namespace Regex.NFA
             return sb.ToString();
         }
 
-        private void ConvertState(TextWriter w, NFA.State state)
+        private void DrawArrow(TextWriter w, State src, State dest)
+        {
+            w.WriteLine($"{src.Index} -> {dest.Index}");
+        }
+
+        private void ConvertState(TextWriter w, NFA.State? prev, NFA.State state)
         {
             if (visitedIndices.Contains(state.Index))
                 return;
             visitedIndices.Add(state.Index);
 
-            foreach (var trans in state.Transitions)
-            {
-                NFA.State child = trans.To;
-                w.WriteLine($"{state.Index} -> {child.Index} [label=\"{ConvertCharClass(trans.Condition)}\"];");
+            string label;
+            if (state.Match == null)
+                label = $"label=\"{state.Index}\"";
+            else
+                label = $"label=\"{state.Index} {ConvertCharClass(state.Match)}\"";
 
-                if (!visitedIndices.Contains(child.Index))
-                    ConvertState(w, trans.To);
+            string shape;
+            if (state.IsEpsilon)
+                shape = "shape=\"circle\"";
+            else
+                shape = "shape=\"doublecircle\"";
+
+            string color = "";
+            if (prev == null || state.Next1 == null && state.Next2 == null)
+                // source and sink states
+                color = "fillcolor=\"#111111\"";
+            else if (state.Back)
+                color = "fillcolor=\"#773333\"";
+
+            w.WriteLine($"{state.Index} [{label} {shape} {color}]");
+
+            if (state.Next1 != null)
+            {
+                DrawArrow(w, state, state.Next1);
+                ConvertState(w, state, state.Next1);
+            }
+            if (state.Next2 != null)
+            {
+                DrawArrow(w, state, state.Next2);
+                ConvertState(w, state, state.Next2);
             }
         }
 
@@ -74,12 +102,12 @@ namespace Regex.NFA
               fontcolor = "#e6e6e6"
             ]
             """);
-            w.WriteLine($"node [shape=doublecircle]; {nfa.Source.Index} {nfa.Sink.Index};");
+            w.WriteLine($"node [shape=doublecircle]; {nfa.Source.Index};");
             w.WriteLine($"node [shape=circle];");
             w.WriteLine("rankdir=LR;");
 
             visitedIndices.Clear();
-            ConvertState(w, nfa.Source);
+            ConvertState(w, null, nfa.Source);
 
             w.WriteLine("}");
         }

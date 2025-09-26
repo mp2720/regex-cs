@@ -5,21 +5,17 @@ namespace Regex
 
     public class RegexToNFA
     {
-        private int stateIndex = 0;
-
         /// <summary>
         /// Table of 256 classes, i-th represents encoded by \i and could be null.
         /// </summary>
         private NFA.CharClass[] BuiltinClassesTable { get; init; }
 
-        private readonly List<NFA.State> states = [];
-
         /// <summary>
-        ///     Construct a new regex to NFA converter. Only ASCII characters are allowed.
+        /// Construct a new regex to NFA converter. Only ASCII characters are allowed.
         /// </summary>
         /// <param name="builtinClasses">
-        ///     Builtin classes should not use names (,),[,],+,*,?,.,&#92;,x,X,^,|,-,n,0,r,t,a,b,v,
-        ///     since those are reserved for escape sequences.
+        /// Builtin classes should not use names (,),[,],+,*,?,.,&#92;,x,X,^,|,-,n,0,r,t,a,b,v,
+        /// since those are reserved for escape sequences.
         /// </param>
         public RegexToNFA(List<(char, NFA.CharClass)> builtinClasses)
         {
@@ -45,29 +41,20 @@ namespace Regex
             return new(classes);
         }
 
-        // Call when sub-expression is determined since those states are collected to be returned
-        // as a conversion result!
-        private NFA.State NewState()
-        {
-            var state = new NFA.State(stateIndex++);
-            states.Add(state);
-            return state;
-        }
-
-        private static char HexDigit(StringParser p) =>
+        private char HexDigit(StringParser p) =>
             (char)p.Or(
                 p => p.Char(c => '0' <= c && c <= '9') - '0',
                 p => p.Char(c => 'a' <= c && c <= 'f') - 'a' + 10,
                 p => p.Char(c => 'A' <= c && c <= 'F') - 'A' + 10
             );
 
-        private static char HexByte(StringParser p)
+        private char HexByte(StringParser p)
         {
             return (char)(HexDigit(p) * 16 + HexDigit(p));
         }
 
         // without \
-        private static char Escaped(StringParser p)
+        private char Escaped(StringParser p)
         {
             char c = p.Char();
             return c switch
@@ -84,7 +71,7 @@ namespace Regex
             };
         }
 
-        private static char CharRangeBoundary(StringParser p)
+        private char CharRangeBoundary(StringParser p)
         {
             return p.Or(
                 p =>
@@ -170,24 +157,37 @@ namespace Regex
             );
         }
 
+        private (NFA.State s, NFA.State e) Group(StringParser p)
+        {
+            p.Char('(');
+            var ret = Alternative(p);
+            p.Char(')');
+            return ret;
+        }
+
+        // Following functions try to match regex language rules,
+        // and on success generate a part of NFA.
+        // They return start and end state of the sub-NFA following those rules:
+        //  1. End state of the sub-NFA never has an outgoing Next1 arrow. 
+        //  2. Start and end states may coincide.
+        //  3. It is always better for clarity to generate redundant states, since those can be easily
+        //     optimized out later.
+        //  4. ε-only loops are allowed.
+        //  5. End may be an ε-state with Next2 arrow.
+        //
+        // This approach (as well as many other parts of this project) is insipred
+        // by Russ Cox's article: https://swtch.com/~rsc/regexp/regexp1.html
+
         private (NFA.State s, NFA.State e) Atom(StringParser p)
         {
             return p.Or(
+                Group,
                 p =>
                 {
-                    p.Char('(');
-                    var ret = Alternative(p);
-                    p.Char(')');
-                    return ret;
-                },
-                p =>
-                {
-                    // s --------> e
+                    // -> s ->
                     var c = CharMatch(p);
-                    var s = NewState();
-                    var e = NewState();
-                    s.Transition(c, e);
-                    return (s, e);
+                    var s = NFA.State.MakeConsuming(c);
+                    return (s, s);
                 }
             );
         }
@@ -198,43 +198,41 @@ namespace Regex
             return p.Or(
                 p =>
                 {
-                    // s -> ... -> e -> e1
-                    //  \               ^
-                    //   \              |
-                    //    *-------------*
+                    // -> s1 -> s -> ... -> e -> e1 ->
+                    //     \                     ^
+                    //      \                    |
+                    //       *-------------------*
                     p.Char('?');
-                    var e1 = NewState();
-                    e.Transition(e1);
-                    s.Transition(e1);
+                    var e1 = NFA.State.MakeEpsilon();
+                    e.Next1 = e1;
+                    var s1 = NFA.State.MakeEpsilon(next1: s, next2: e1);
+                    return (s1, e1);
+                },
+                p =>
+                {
+                    // -> s -> ... -> e -> e1 ->
+                    //    ^                /
+                    //     \              /
+                    //      *---- b <----*
+                    p.Char('+');
+                    var b = NFA.State.MakeEpsilon(next1: s, back: true);
+                    var e1 = NFA.State.MakeEpsilon(next2: b);
+                    e.Next1 = e1;
                     return (s, e1);
                 },
                 p =>
                 {
-                    // s -> ... -> e -> e1
-                    // ^                /
-                    //  \              /
-                    //   *------------*
-                    p.Char('+');
-                    var e1 = NewState();
-                    e.Transition(e1);
-                    e1.Transition(s);
-                    return (s, e);
-                },
-                p =>
-                {
-                    // s1 -> s -> ... -> e -> e1
-                    //  \^              /     ^
-                    //   \\            /     / 
-                    //    \*----------*     /  
-                    //     \               /   
-                    //      *-------------*
+                    //      +-> s -> ... -> e
+                    //     /                |
+                    // -> s1 <----- b <-----+
+                    //     \
+                    //      *-----> e1 ----->
                     p.Char('*');
-                    var s1 = NewState();
-                    var e1 = NewState();
-                    s1.Transition(s);
-                    s1.Transition(e1);
-                    e.Transition(e1);
-                    e.Transition(s1);
+
+                    var e1 = NFA.State.MakeEpsilon();
+                    var s1 = NFA.State.MakeEpsilon(next1: s, next2: e1);
+                    var b = NFA.State.MakeEpsilon(next1: s1, back: true);
+                    e.Next1 = b;
                     return (s1, e1);
                 },
                 p => (s, e) // no quantifier
@@ -250,10 +248,10 @@ namespace Regex
                 if (!optional.Set)
                     break;
 
-                // s -> ... -> e -> s1 -> ... -> e1
+                // -> s -> ... -> e -> s1 -> ... -> e1 ->
 
                 var (s1, e1) = optional.Value;
-                e.Transition(s1);
+                e.Next1 = s1;
                 e = e1;
             }
             return (s, e);
@@ -270,33 +268,46 @@ namespace Regex
             if (!opt.Set)
                 return (s1, e1);
 
-            //    +-> s1 -> ... -> e1 --> e
-            //   /                        ^
-            //  /                        /
-            // s --> s2 -> ... -> e2 ---*
+            //      +-> s1 -> ... -> e1 --> e ->
+            //     /                        ^
+            //    /                        /
+            // -> s --> s2 -> ... -> e2 --*
 
             var (s2, e2) = opt.Value;
-            var s = NewState();
-            var e = NewState();
-            s.Transition(s1);
-            s.Transition(s2);
-            e1.Transition(e);
-            e2.Transition(e);
+            var s = NFA.State.MakeEpsilon(next1: s1, next2: s2);
+            var e = NFA.State.MakeEpsilon();
+            e1.Next1 = e;
+            e2.Next1 = e;
             return (s, e);
+        }
+
+        private void AssignIndexDFS(List<NFA.State> reachableStates, NFA.State? state, ref int index)
+        {
+            if (state == null || state.Index >= 0)
+                return;
+
+            state.Index = index++;
+            reachableStates.Add(state);
+            AssignIndexDFS(reachableStates, state.Next1, ref index);
+            AssignIndexDFS(reachableStates, state.Next2, ref index);
         }
 
         public NFA.Automaton Convert(string expr)
         {
-            states.Clear();
-            stateIndex = 0;
             var p = new StringParser(expr, 0);
 
             var (start, end) = Alternative(p);
             p.EOF();
 
-            var sink = NewState();
-            end.Transition(sink);
-            return new NFA.Automaton(start, sink, states.AsReadOnly());
+            var source = NFA.State.MakeEpsilon(next1: start);
+            var sink = NFA.State.MakeEpsilon();
+            end.Next1 = sink;
+
+            List<NFA.State> states = [];
+            int index = 0;
+            AssignIndexDFS(states, source, ref index);
+
+            return new NFA.Automaton(source, states);
         }
     }
 }
