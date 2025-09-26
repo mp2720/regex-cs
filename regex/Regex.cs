@@ -24,6 +24,9 @@ namespace Regex
                 BuiltinClassesTable[cl.Item1] = cl.Item2;
         }
 
+        /// <summary>
+        /// Create new NFA builder with classes for digits, word chars, spaces, and their negations.
+        /// </summary>
         public static RegexToNFA WithDefaultBuiltinClasses()
         {
             NFA.CharClass
@@ -165,15 +168,16 @@ namespace Regex
             return ret;
         }
 
-        // Following functions try to match regex language rules,
+        // Following functions will try to match regex language rules,
         // and on success generate a part of NFA.
-        // They return start and end state of the sub-NFA following those rules:
+        // They return start and end state of the sub-NFA following these rules:
         //  1. End state of the sub-NFA never has an outgoing Next1 arrow. 
         //  2. Start and end states may coincide.
         //  3. It is always better for clarity to generate redundant states, since those can be easily
         //     optimized out later.
         //  4. ε-only loops are allowed.
         //  5. End may be an ε-state with Next2 arrow.
+        //  6. Back arrows in loops are marked.
         //
         // This approach (as well as many other parts of this project) is insipred
         // by Russ Cox's article: https://swtch.com/~rsc/regexp/regexp1.html

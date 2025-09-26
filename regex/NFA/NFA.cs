@@ -1,11 +1,11 @@
 namespace Regex.NFA
 {
     /// <summary>
-    /// Range of 8-bit characters [From..To].
+    /// Range of 8-bit characters [start..end].
     /// </summary>
-    public record CharRange(char From, char To) { }
+    public record CharRange(char start, char end) { }
 
-    public record CharClass(IReadOnlyList<CharRange> Ranges, bool Inverted = false)
+    public record CharClass(IReadOnlyList<CharRange> ranges, bool inverted = false)
     {
         public static CharClass All()
         {
@@ -30,7 +30,7 @@ namespace Regex.NFA
         /// </summary>
         public CharClass Invert()
         {
-            return new CharClass(Ranges, !Inverted);
+            return new CharClass(ranges, !inverted);
         }
     }
 
@@ -103,7 +103,8 @@ namespace Regex.NFA
 
     /// <summary>
     /// NFA automaton with ε-states.
-    /// Note that source and sink states should be ε.
+    /// Sink states should be ε.
+    /// If indices are assigned to states, then States[i].Index == i.
     /// </summary>
-    public record Automaton(State[] Sources, IReadOnlyList<State> States) { }
+    public record Automaton(State[] sources, IReadOnlyList<State> states) { }
 }

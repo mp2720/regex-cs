@@ -24,15 +24,15 @@ namespace Regex.NFA
                 return "ε";
 
             var sb = new StringBuilder("[");
-            if (cl.Inverted)
+            if (cl.inverted)
                 sb.Append('^');
 
-            foreach (var range in cl.Ranges)
+            foreach (var range in cl.ranges)
             {
-                if (range.From == range.To)
-                    sb.Append($"{PrintEscapedChar(range.From)}");
+                if (range.start == range.end)
+                    sb.Append($"{PrintEscapedChar(range.start)}");
                 else
-                    sb.Append($"{PrintEscapedChar(range.From)}-{PrintEscapedChar(range.To)}");
+                    sb.Append($"{PrintEscapedChar(range.start)}-{PrintEscapedChar(range.end)}");
             }
 
             sb.Append(']');
@@ -106,7 +106,7 @@ namespace Regex.NFA
             w.WriteLine("rankdir=LR;");
 
             visitedIndices.Clear();
-            foreach (var src in nfa.Sources)
+            foreach (var src in nfa.sources)
                 ConvertState(w, null, src);
 
             w.WriteLine("}");
