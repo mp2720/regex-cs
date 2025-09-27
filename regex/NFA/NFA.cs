@@ -3,9 +3,9 @@ namespace Regex.NFA
     /// <summary>
     /// Range of 8-bit characters [start..end].
     /// </summary>
-    public record CharRange(char start, char end) { }
+    public record CharRange(char Start, char End) { }
 
-    public record CharClass(IReadOnlyList<CharRange> ranges, bool inverted = false)
+    public record CharClass(IReadOnlyList<CharRange> Ranges, bool Inverted = false)
     {
         public static CharClass All()
             => new([], true);
@@ -25,7 +25,7 @@ namespace Regex.NFA
         /// Make an inverted copy.
         /// </summary>
         public CharClass Invert()
-            => new(ranges, !inverted);
+            => new(Ranges, !Inverted);
     }
 
     /// <summary>
@@ -79,5 +79,5 @@ namespace Regex.NFA
     /// There's only one sink state; it has not outgoing arrows and it's an ε-state.
     /// For all i: States[i].Index == i.
     /// </summary>
-    public record Automaton(IReadOnlyList<State> sources, State sink, IReadOnlyList<State> states) { }
+    public record Automaton(IReadOnlyList<State> Sources, State Sink, IReadOnlyList<State> States) { }
 }

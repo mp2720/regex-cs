@@ -16,16 +16,16 @@ namespace Regex.NFA
 
         private static string RangeLabel(CharRange range)
         {
-            if (range.start == range.end)
-                return $"{EscapeChar(range.start)}";
+            if (range.Start == range.End)
+                return $"{EscapeChar(range.Start)}";
             else
-                return $"{EscapeChar(range.start)}-{EscapeChar(range.end)}";
+                return $"{EscapeChar(range.Start)}-{EscapeChar(range.End)}";
         }
 
         private static string CharClassLabel(CharClass c)
         {
-            string inverseSign = c.inverted ? "^" : "";
-            string rangesStr = String.Join("", c.ranges.Select(r => RangeLabel(r)));
+            string inverseSign = c.Inverted ? "^" : "";
+            string rangesStr = String.Join("", c.Ranges.Select(r => RangeLabel(r)));
             return $"[{inverseSign}{rangesStr}]";
         }
 
@@ -82,8 +82,8 @@ namespace Regex.NFA
             rankdir=LR;
             """);
 
-            var visited = new BitArray(nfa.states.Count);
-            foreach (var src in nfa.sources)
+            var visited = new BitArray(nfa.States.Count);
+            foreach (var src in nfa.Sources)
                 RenderState(w, true, src, visited);
 
             w.WriteLine("}");
