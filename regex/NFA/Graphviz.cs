@@ -1,14 +1,11 @@
-using System.Text;
+using System.Collections;
 
 namespace Regex.NFA
 {
-    public class GraphvizGenerator
+    public static class Graphviz
     {
-        private readonly HashSet<int> visitedIndices = [];
-
-        private static string PrintEscapedChar(char c)
-        {
-            return c switch
+        private static string EscapeChar(char c) =>
+            c switch
             {
                 '\"' => "\\\\",
                 '\r' => "\\\\r",
@@ -16,46 +13,33 @@ namespace Regex.NFA
                 _ when '\x20' <= c && c <= '\x7e' => c.ToString(),
                 _ => $"\\\\x{(int)c:x2}"
             };
+
+        private static string RangeLabel(CharRange range)
+        {
+            if (range.start == range.end)
+                return $"{EscapeChar(range.start)}";
+            else
+                return $"{EscapeChar(range.start)}-{EscapeChar(range.end)}";
         }
 
-        private static string ConvertCharClass(CharClass? cl)
+        private static string CharClassLabel(CharClass c)
         {
-            if (cl == null)
-                return "ε";
-
-            var sb = new StringBuilder("[");
-            if (cl.inverted)
-                sb.Append('^');
-
-            foreach (var range in cl.ranges)
-            {
-                if (range.start == range.end)
-                    sb.Append($"{PrintEscapedChar(range.start)}");
-                else
-                    sb.Append($"{PrintEscapedChar(range.start)}-{PrintEscapedChar(range.end)}");
-            }
-
-            sb.Append(']');
-
-            return sb.ToString();
+            string inverseSign = c.inverted ? "^" : "";
+            string rangesStr = String.Join("", c.ranges.Select(r => RangeLabel(r)));
+            return $"[{inverseSign}{rangesStr}]";
         }
 
-        private void DrawArrow(TextWriter w, State src, State dest)
+        private static void RenderState(TextWriter w, bool isSource, State state, BitArray visited)
         {
-            w.WriteLine($"{src.Index} -> {dest.Index}");
-        }
-
-        private void ConvertState(TextWriter w, NFA.State? prev, NFA.State state)
-        {
-            if (visitedIndices.Contains(state.Index))
+            if (visited.Get(state.Index))
                 return;
-            visitedIndices.Add(state.Index);
+            visited.Set(state.Index, true);
 
             string label;
-            if (state.Match == null)
+            if (state.Condition == null)
                 label = $"label=\"{state.Index}\"";
             else
-                label = $"label=\"{state.Index} {ConvertCharClass(state.Match)}\"";
+                label = $"label=\"{state.Index} {CharClassLabel(state.Condition)}\"";
 
             string shape;
             if (state.IsEpsilon)
@@ -64,27 +48,21 @@ namespace Regex.NFA
                 shape = "shape=\"doublecircle\"";
 
             string color = "";
-            if (prev == null || state.Next1 == null && state.Next2 == null)
-                // source and sink states
-                color = "fillcolor=\"#111111\"";
-            else if (state.Back)
+            if (state.Back)
                 color = "fillcolor=\"#773333\"";
+            else if (isSource || state.IsSink)
+                color = "fillcolor=\"#111111\"";
 
             w.WriteLine($"{state.Index} [{label} {shape} {color}]");
 
-            if (state.Next1 != null)
+            foreach (var nextState in state.Next)
             {
-                DrawArrow(w, state, state.Next1);
-                ConvertState(w, state, state.Next1);
-            }
-            if (state.Next2 != null)
-            {
-                DrawArrow(w, state, state.Next2);
-                ConvertState(w, state, state.Next2);
+                w.WriteLine($"{state.Index} -> {nextState.Index}");
+                RenderState(w, false, nextState, visited);
             }
         }
 
-        public void Convert(TextWriter w, NFA.Automaton nfa)
+        public static void RenderAutomaton(TextWriter w, Automaton nfa)
         {
             w.WriteLine("""
             digraph G {
@@ -101,13 +79,12 @@ namespace Regex.NFA
               color = "#e6e6e6",
               fontcolor = "#e6e6e6"
             ]
+            rankdir=LR;
             """);
-            w.WriteLine($"node [shape=circle];");
-            w.WriteLine("rankdir=LR;");
 
-            visitedIndices.Clear();
+            var visited = new BitArray(nfa.states.Count);
             foreach (var src in nfa.sources)
-                ConvertState(w, null, src);
+                RenderState(w, true, src, visited);
 
             w.WriteLine("}");
         }

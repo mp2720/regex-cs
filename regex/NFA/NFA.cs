@@ -8,14 +8,10 @@ namespace Regex.NFA
     public record CharClass(IReadOnlyList<CharRange> ranges, bool inverted = false)
     {
         public static CharClass All()
-        {
-            return new CharClass([], true);
-        }
+            => new([], true);
 
         public static CharClass SingleChar(char c)
-        {
-            return new CharClass([new(c, c)]);
-        }
+            => new([new(c, c)]);
 
         public static CharClass List(params char[] chs)
         {
@@ -26,43 +22,22 @@ namespace Regex.NFA
         }
 
         /// <summary>
-        /// Return an inverted copy.
+        /// Make an inverted copy.
         /// </summary>
         public CharClass Invert()
-        {
-            return new CharClass(ranges, !inverted);
-        }
+            => new(ranges, !inverted);
     }
 
     /// <summary>
     /// There are two different types of NFA states: ε and non-ε.
-    /// ε-states do not consume/generate characters, and may have from 0 to 2 outgoing arrows.
-    /// State of this type also may be a "back" state - intermediate state in a loop back path.
-    /// Non-ε-states consume/generate one character at a time and have no more than 1 outgoing arrow.
+    /// ε-state also may be a "back" state - intermediate state in a loop back path.
     /// This non-standard representation gives much flexibility at converting regexes to NFA and
     /// preserves crucial information that can be used later for optimization purposes.
     /// </summary>
     public class State
     {
-        private State? _next2;
-
-        public CharClass? Match { get; private init; }
-        public State? Next1 { get; set; }
-        /// <summary>
-        /// Alternative next state that only an ε-state may have.
-        /// Check if this state is ε before write.
-        /// </summary>
-        /// <exception cref="InvalidOperationException">Thrown by set if this state is non-ε.</exception> 
-        public State? Next2
-        {
-            get => _next2;
-            set
-            {
-                if (!IsEpsilon)
-                    throw new InvalidOperationException();
-                _next2 = value;
-            }
-        }
+        public CharClass? Condition { get; private init; }
+        public List<State> Next { get; private init; } = [];
 
         /// <summary>
         /// Regex parser adds extra intermediate ε-states when generates loops in NFA.
@@ -74,37 +49,35 @@ namespace Regex.NFA
         /// <summary>
         /// An index of the current state.
         /// Negative value (default) means no index was assigned.
-        /// If automaton is indexed, then each index is unique and the indices set is [0..n-1].
         /// </summary>
-        public int Index { get; set; }
+        public int Index { get; set; } = -1;
 
-        /// <summary>
-        /// Automaton doesn't have any deadlocks, so final state is the state with no outgoing arrows.
-        /// </summary>
-        public bool IsFinal { get => Next1 == null && Next2 == null; }
+        public bool IsSink { get => Next.Count() == 0; }
 
-        public bool IsEpsilon { get => Match == null; }
+        public bool IsEpsilon { get => Condition == null; }
 
-        private State(CharClass? match, State? next1, State? next2, bool back)
+        private State(CharClass? condition, bool back)
         {
-            this.Match = match;
-            this.Next1 = next1;
-            this._next2 = next2;
-            this.Back = back;
-            this.Index = -1;
+            Condition = condition;
+            Back = back;
         }
 
-        public static State MakeEpsilon(State? next1 = null, State? next2 = null, bool back = false)
-            => new State(null, next1, next2, back);
+        public static State MakeEpsilon()
+            => new(null, false);
 
-        public static State MakeConsuming(CharClass condition, State? next1 = null)
-            => new State(condition, next1, null, false);
+        public static State MakeBack()
+            => new(null, true);
+
+        public static State MakeConsuming(CharClass condition)
+            => new State(condition, false);
+
+        public void AddNext(params State[] states) => Next.AddRange(states);
     }
 
     /// <summary>
     /// NFA automaton with ε-states.
-    /// Sink states should be ε.
-    /// If indices are assigned to states, then States[i].Index == i.
+    /// There's only one sink state; it has not outgoing arrows and it's an ε-state.
+    /// For all i: States[i].Index == i.
     /// </summary>
-    public record Automaton(State[] sources, IReadOnlyList<State> states) { }
+    public record Automaton(IReadOnlyList<State> sources, State sink, IReadOnlyList<State> states) { }
 }

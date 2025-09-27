@@ -208,8 +208,9 @@ namespace Regex
                     //       *-------------------*
                     p.Char('?');
                     var e1 = NFA.State.MakeEpsilon();
-                    e.Next1 = e1;
-                    var s1 = NFA.State.MakeEpsilon(next1: s, next2: e1);
+                    var s1 = NFA.State.MakeEpsilon();
+                    e.AddNext(e1);
+                    s1.AddNext(s, e1);
                     return (s1, e1);
                 },
                 p =>
@@ -219,9 +220,11 @@ namespace Regex
                     //     \              /
                     //      *---- b <----*
                     p.Char('+');
-                    var b = NFA.State.MakeEpsilon(next1: s, back: true);
-                    var e1 = NFA.State.MakeEpsilon(next2: b);
-                    e.Next1 = e1;
+                    var b = NFA.State.MakeBack();
+                    var e1 = NFA.State.MakeEpsilon();
+                    e.AddNext(e1);
+                    e1.AddNext(b);
+                    b.AddNext(s);
                     return (s, e1);
                 },
                 p =>
@@ -233,10 +236,12 @@ namespace Regex
                     //      *-----> e1 ----->
                     p.Char('*');
 
+                    var s1 = NFA.State.MakeEpsilon();
+                    var b = NFA.State.MakeBack();
                     var e1 = NFA.State.MakeEpsilon();
-                    var s1 = NFA.State.MakeEpsilon(next1: s, next2: e1);
-                    var b = NFA.State.MakeEpsilon(next1: s1, back: true);
-                    e.Next1 = b;
+                    s1.AddNext(s, e1);
+                    e.AddNext(b);
+                    b.AddNext(s1);
                     return (s1, e1);
                 },
                 p => (s, e) // no quantifier
@@ -255,13 +260,13 @@ namespace Regex
                 // -> s -> ... -> e -> s1 -> ... -> e1 ->
 
                 var (s1, e1) = optional.Value;
-                e.Next1 = s1;
+                e.AddNext(s1);
                 e = e1;
             }
             return (s, e);
         }
 
-        private (NFA.State, NFA.State) Alternative(StringParser p)
+        private (NFA.State s, NFA.State e) Alternative(StringParser p)
         {
             var (s1, e1) = Concat(p);
             var opt = p.Optional(p =>
@@ -278,10 +283,11 @@ namespace Regex
             // -> s --> s2 -> ... -> e2 --*
 
             var (s2, e2) = opt.Value;
-            var s = NFA.State.MakeEpsilon(next1: s1, next2: s2);
+            var s = NFA.State.MakeEpsilon();
             var e = NFA.State.MakeEpsilon();
-            e1.Next1 = e;
-            e2.Next1 = e;
+            s.AddNext(s1, s2);
+            e1.AddNext(e);
+            e2.AddNext(e);
             return (s, e);
         }
 
@@ -292,26 +298,27 @@ namespace Regex
 
             state.Index = index++;
             reachableStates.Add(state);
-            AssignIndexDFS(reachableStates, state.Next1, ref index);
-            AssignIndexDFS(reachableStates, state.Next2, ref index);
+            foreach (var nextState in state.Next)
+                AssignIndexDFS(reachableStates, nextState, ref index);
         }
 
         public NFA.Automaton Convert(string expr)
         {
             var p = new StringParser(expr, 0);
 
-            var (start, end) = Alternative(p);
+            var (s, e) = Alternative(p);
             p.EOF();
 
-            var source = NFA.State.MakeEpsilon(next1: start);
+            var source = NFA.State.MakeEpsilon();
             var sink = NFA.State.MakeEpsilon();
-            end.Next1 = sink;
+            source.AddNext(s);
+            e.AddNext(sink);
 
             List<NFA.State> states = [];
             int index = 0;
             AssignIndexDFS(states, source, ref index);
 
-            return new NFA.Automaton([source], states);
+            return new NFA.Automaton([source], sink, states);
         }
     }
 }
