@@ -29,7 +29,11 @@ namespace Regex.NFA
             return $"[{inverseSign}{rangesStr}]";
         }
 
-        private static void RenderState(TextWriter w, bool isSource, State state, BitArray visited)
+        private static void RenderState(
+            TextWriter w,
+            State state,
+            BitArray visited,
+            BitArray sources)
         {
             if (visited.Get(state.Index))
                 return;
@@ -47,18 +51,26 @@ namespace Regex.NFA
             else
                 shape = "shape=\"doublecircle\"";
 
-            string color = "";
+            string fillcolor = "";
             if (state.Back)
-                color = "fillcolor=\"#773333\"";
-            else if (isSource || state.IsSink)
-                color = "fillcolor=\"#111111\"";
+                fillcolor = "fillcolor=\"#773333\"";
+            else if (sources.Get(state.Index))
+                fillcolor = "fillcolor=\"#000000\"";
 
-            w.WriteLine($"{state.Index} [{label} {shape} {color}]");
+            string color = "";
+            if (state.IsSink)
+                color = "color=\"#ff0000\"";
+
+            string margin = "";
+            if (!state.IsEpsilon)
+                margin = "margin=\"0\"";
+
+            w.WriteLine($"{state.Index} [{label} {shape} {fillcolor} {color} {margin}]");
 
             foreach (var nextState in state.Next)
             {
                 w.WriteLine($"{state.Index} -> {nextState.Index}");
-                RenderState(w, false, nextState, visited);
+                RenderState(w, nextState, visited, sources);
             }
         }
 
@@ -82,9 +94,13 @@ namespace Regex.NFA
             rankdir=LR;
             """);
 
+            var sources = new BitArray(nfa.States.Count);
+            foreach (var src in nfa.Sources)
+                sources.Set(src.Index, true);
+
             var visited = new BitArray(nfa.States.Count);
             foreach (var src in nfa.Sources)
-                RenderState(w, true, src, visited);
+                RenderState(w, src, visited, sources);
 
             w.WriteLine("}");
         }
