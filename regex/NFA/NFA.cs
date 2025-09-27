@@ -37,7 +37,7 @@ namespace Regex.NFA
     public class State
     {
         public CharClass? Condition { get; private init; }
-        public List<State> Next { get; private init; } = [];
+        public List<State> Next { get; private init; }
 
         /// <summary>
         /// Regex parser adds extra intermediate ε-states when generates loops in NFA.
@@ -56,20 +56,21 @@ namespace Regex.NFA
 
         public bool IsEpsilon { get => Condition == null; }
 
-        private State(CharClass? condition, bool back)
+        public State(CharClass? condition, bool back, List<State> next)
         {
             Condition = condition;
             Back = back;
+            Next = next;
         }
 
         public static State MakeEpsilon()
-            => new(null, false);
+            => new(null, false, []);
 
         public static State MakeBack()
-            => new(null, true);
+            => new(null, true, []);
 
         public static State MakeConsuming(CharClass condition)
-            => new State(condition, false);
+            => new(condition, false, []);
 
         public void AddNext(params State[] states) => Next.AddRange(states);
     }
@@ -77,6 +78,7 @@ namespace Regex.NFA
     /// <summary>
     /// NFA automaton with ε-states.
     /// There's only one sink state; it has not outgoing arrows and it's an ε-state.
+    /// Source and sink states could not be a "back" states.
     /// For all i: States[i].Index == i.
     /// </summary>
     public record Automaton(IReadOnlyList<State> Sources, State Sink, IReadOnlyList<State> States) { }
