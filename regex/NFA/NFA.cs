@@ -3,7 +3,11 @@ namespace Regex.NFA
     /// <summary>
     /// Range of 8-bit characters [start..end].
     /// </summary>
-    public record CharRange(char Start, char End) { }
+    public record CharRange(byte Start, byte End)
+    {
+        public CharRange(char start, char end)
+            : this(checked((byte)start), checked((byte)end)) { }
+    }
 
     public record CharClass(IReadOnlyList<CharRange> Ranges, bool Inverted = false)
     {

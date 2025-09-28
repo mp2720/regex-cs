@@ -4,8 +4,8 @@ namespace Regex.NFA
 {
     public static class Graphviz
     {
-        private static string EscapeChar(char c) =>
-            c switch
+        private static string EscapeChar(byte c) =>
+            (char)c switch
             {
                 '\"' => "\\\\",
                 '\r' => "\\\\r",
