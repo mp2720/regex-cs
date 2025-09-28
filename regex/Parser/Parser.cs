@@ -28,19 +28,19 @@ namespace Regex.Parser
         }
     }
 
-    public class InvalidSyntaxException : Exception
+    public class ParsingException : Exception
     {
-        public InvalidSyntaxException(StringParser p) : base($"Invalid syntax at character {p.Index}") { }
-        public InvalidSyntaxException(StringParser p, string reason)
-            : base($"Invalid syntax at character {p.Index}: {reason}") { }
+        public ParsingException(Parser p) : base($"Invalid expression at character {p.Index}") { }
+        public ParsingException(Parser p, string reason)
+            : base($"Invalid expression at character {p.Index}: {reason}") { }
     }
 
-    public record StringParser
+    public record Parser
     {
         public String Text { get; private set; }
         public int Index { get; private set; }
 
-        public StringParser(String text, int index)
+        public Parser(String text, int index)
         {
             Text = text;
             Index = index;
@@ -53,7 +53,7 @@ namespace Regex.Parser
         /// (thus no devastating backtracking is possible).
         /// If none matched, Or fails.
         /// </summary>
-        public T Or<T>(params Func<StringParser, T>[] parseFuncs)
+        public T Or<T>(params Func<Parser, T>[] parseFuncs)
         {
             int savedIndex = Index;
             for (int i = 0; i < parseFuncs.Length; ++i)
@@ -62,7 +62,7 @@ namespace Regex.Parser
                 {
                     return parseFuncs[i](this);
                 }
-                catch (InvalidSyntaxException)
+                catch (ParsingException)
                 {
                     if (Index > savedIndex + 1 || i == parseFuncs.Length - 1)
                         throw;
@@ -76,7 +76,7 @@ namespace Regex.Parser
         public char Char()
         {
             if (Index == Text.Length)
-                throw new InvalidSyntaxException(this, "unexpected EOF");
+                throw new ParsingException(this, "unexpected EOF");
             return Text[Index++];
         }
 
@@ -86,7 +86,7 @@ namespace Regex.Parser
             if (p(c))
                 return c;
             else
-                throw new InvalidSyntaxException(this);
+                throw new ParsingException(this);
         }
 
         public char Char(char c)
@@ -105,21 +105,21 @@ namespace Regex.Parser
 
         public void EOF() {
             if (Index != Text.Length)
-                throw new InvalidSyntaxException(this, "junk at the end of input");
+                throw new ParsingException(this, "junk at the end of input");
         }
 
         /// <summary>
         /// Adapter from <c>InvalidSyntaxException</c> to <c>Maybe</c>.
         /// Does not backtrack (except the cases when only one character was read).
         /// </summary>
-        public Maybe<T> Optional<T>(Func<StringParser, T> parseFunc)
+        public Maybe<T> Optional<T>(Func<Parser, T> parseFunc)
         {
             int savedIndex = Index;
             try
             {
                 return Maybe<T>.Some(parseFunc(this));
             }
-            catch (InvalidSyntaxException)
+            catch (ParsingException)
             {
                 Index = savedIndex;
                 return Maybe<T>.Empty();
