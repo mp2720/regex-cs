@@ -1,6 +1,6 @@
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Regex.Parser;
+using Regex.Runtime;
 
 namespace Regex
 {
@@ -15,7 +15,7 @@ namespace Regex
 
         // Pointer to scanner and it's pinned handle
         private readonly IntPtr scannerPtr;
-        private GCHandle scannerHandle;
+        // private GCHandle scannerHandle;
 
         public unsafe CompiledRegex(string regex)
         {
@@ -92,24 +92,27 @@ namespace Regex
                 sinkState = new IntPtr(&statesArr[nfa.Sink.Index])
             };
 
-            scannerHandle = GCHandle.Alloc(scannerPtr, GCHandleType.Pinned);
-            var err = NativeAPI.rcs_init_scanner(scannerHandle.AddrOfPinnedObject(), new IntPtr(nativeNFA));
+            var err = NativeAPI.rcs_scanner_init(out scannerPtr, new IntPtr(nativeNFA));
             if (!err.Ok())
                 throw new NativeAPIException(NativeAPI.rcs_strerror(err));
         }
 
-        public unsafe string DebugNFATextDump()
+        public unsafe bool Match(Reader inputReader)
         {
-            IntPtr str; // stack variables are fixed
-            NativeAPI.rcs_debug_dump_nfa(new IntPtr(&str), new IntPtr(nativeNFA));
-            string? marshalledString = Marshal.PtrToStringUTF8(str);
-            Debug.Assert(marshalledString != null);
-            return marshalledString;
+            byte ok = 0;
+            inputReader.Exception = null;
+            var err = NativeAPI.rcs_match(out ok, scannerPtr, new IntPtr(inputReader.Native));
+            if (!err.Ok())
+                throw new NativeAPIException(NativeAPI.rcs_strerror(err));
+            if (inputReader.Exception != null)
+                throw inputReader.Exception;
+            return ok != 0;
         }
 
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         public unsafe void Dispose(bool disposing)
@@ -124,6 +127,8 @@ namespace Regex
                 Marshal.FreeHGlobal(new IntPtr(charRangesArr));
 
                 Marshal.FreeHGlobal(new IntPtr(nativeNFA));
+
+                NativeAPI.rcs_scanner_free(scannerPtr);
 
                 disposed = true;
             }

@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace Regex
+namespace Regex.Runtime
 {
     public class NativeAPIException : Exception
     {
@@ -48,13 +48,28 @@ namespace Regex
             public IntPtr sinkState; // struct rcs_nfa_state*
         };
 
-        [LibraryImport("libregex-cs-runtime.so")]
-        public static partial Error rcs_init_scanner(IntPtr scannerOut, IntPtr nfa);
+        public delegate uint Read(IntPtr arg); // rcs_api_size (*)(void *arg)
+        public delegate byte Unwind(IntPtr arg, ulong n); // rcs_api_size (*)(void *arg, uint64_t n)
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct Reader
+        {
+            public IntPtr read; // rcs_api_size (*)(void *arg)
+            public IntPtr unwind; // rcs_api_size (*)(void *arg, uint64_t n)
+            public IntPtr buf; // uint8_t*
+            public IntPtr arg; // void*
+        }
 
         [LibraryImport("libregex-cs-runtime.so")]
-        public static partial Error rcs_debug_dump_nfa(IntPtr textOut, IntPtr nfa);
+        public static partial Error rcs_scanner_init(out IntPtr scanner, IntPtr nfa);
 
         [LibraryImport("libregex-cs-runtime.so", StringMarshalling = StringMarshalling.Utf8)]
         public static partial String rcs_strerror(Error err);
+
+        [LibraryImport("libregex-cs-runtime.so")]
+        public static partial Error rcs_match(out byte out_ok, IntPtr scanner, IntPtr reader);
+
+        [LibraryImport("libregex-cs-runtime.so")]
+        public static partial Error rcs_scanner_free(IntPtr scanner);
     }
 }
