@@ -61,15 +61,15 @@ rcs_error rcs_standard_match(
     // RCS_BREAKPOINT();
 
     int c;
-    bool reached_final_last_step = false;
+    bool accepted_last_step = false;
     bool has_active_states = false;
 
     // activate source states
     for (size_t i = 0; i < sc->nfa->sources_len; ++i) {
         const struct rcs_nfa_state *src = &sc->nfa->states[i];
-        if (rcs_nfa_state_is_sink(src)) {
-            // source could also be sink
-            reached_final_last_step = true;
+        if (rcs_nfa_state_is_accept(src)) {
+            // source could also be accepting
+            accepted_last_step = true;
         } else {
             has_active_states = true;
             rcs_bitmap_set(sc->states_bm[0], sc->nfa->sources[i] - sc->nfa->states);
@@ -79,7 +79,7 @@ rcs_error rcs_standard_match(
     // RCS_BREAKPOINT();
 
     while ((c = read_char(sc, reader)) >= 0 && has_active_states) {
-        reached_final_last_step = false;
+        accepted_last_step = false;
         has_active_states = false;
 
         for (size_t i = 0; i < sc->nfa->states_len; ++i) {
@@ -88,15 +88,15 @@ rcs_error rcs_standard_match(
             if (!rcs_bitmap_get(sc->states_bm[0], i))
                 continue;
 
-            assert(!rcs_nfa_state_is_sink(state) && "unexpected sink state");
+            assert(!rcs_nfa_state_is_accept(state) && "unexpected accept state");
             assert(!rcs_nfa_state_is_epsilon(state) && "unexpected epsilon state");
 
             if (!state_matches_char(state, c))
                 continue;
 
             for (size_t j = 0; j < state->next_len; ++j) {
-                if (rcs_nfa_state_is_sink(state->next[j])) {
-                    reached_final_last_step = true;
+                if (rcs_nfa_state_is_accept(state->next[j])) {
+                    accepted_last_step = true;
                 } else {
                     rcs_bitmap_set(sc->states_bm[1], state->next[j] - sc->nfa->states);
                     has_active_states = true;
@@ -111,7 +111,7 @@ rcs_error rcs_standard_match(
         sc->states_bm[1] = tmp;
     }
 
-    *out_ok = reached_final_last_step;
+    *out_ok = accepted_last_step;
 
     return RCS_OK;
 }

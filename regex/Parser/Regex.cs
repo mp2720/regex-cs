@@ -165,20 +165,6 @@ namespace Regex.Parser
             return ret;
         }
 
-        // Following functions will try to match regex language rules,
-        // and on success generate a part of NFA.
-        // They return start and end state of the sub-NFA following these rules:
-        //  1. End state of the sub-NFA never has an outgoing Next1 arrow. 
-        //  2. Start and end states may coincide.
-        //  3. It is always better for clarity to generate redundant states, since those can be easily
-        //     optimized out later.
-        //  4. ε-only loops are allowed.
-        //  5. End may be an ε-state with Next2 arrow.
-        //  6. Back arrows in loops are marked.
-        //
-        // This approach (as well as many other parts of this project) is insipred
-        // by Russ Cox's article: https://swtch.com/~rsc/regexp/regexp1.html
-
         private (NFA.State s, NFA.State e) Atom(Parser p)
         {
             return p.Or(
@@ -307,15 +293,16 @@ namespace Regex.Parser
             p.EOF();
 
             var source = NFA.State.MakeEpsilon();
-            var sink = NFA.State.MakeEpsilon();
+            var accept = NFA.State.MakeEpsilon();
+            accept.Accept = true;
             source.AddNext(s);
-            e.AddNext(sink);
+            e.AddNext(accept);
 
             List<NFA.State> states = [];
             int index = 0;
             AssignIndexDFS(states, source, ref index);
 
-            return new NFA.Automaton([source], sink, states);
+            return new NFA.Automaton([source], accept, states);
         }
     }
 }

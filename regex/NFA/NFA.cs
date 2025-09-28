@@ -56,7 +56,10 @@ namespace Regex.NFA
         /// </summary>
         public int Index { get; set; } = -1;
 
-        public bool IsSink { get => Next.Count() == 0; }
+        /// <summary>
+        /// Remember that we allow only one accept state in NFA and it should also be ε.
+        /// </summary>
+        public bool Accept { get; set; } = false;
 
         public bool IsEpsilon { get => Condition == null; }
 
@@ -81,9 +84,10 @@ namespace Regex.NFA
 
     /// <summary>
     /// NFA automaton with ε-states.
-    /// There's only one sink state; it has not outgoing arrows and it's an ε-state.
-    /// Source and sink states could not be a "back" states.
+    /// There's only one accepting state; it has not outgoing arrows and it's an ε-state.
+    /// Sink-state and sink-transitions are implicit (use your imagination).
+    /// Source and accepting states could not be a "back" states.
     /// For all i: States[i].Index == i.
     /// </summary>
-    public record Automaton(IReadOnlyList<State> Sources, State Sink, IReadOnlyList<State> States) { }
+    public record Automaton(IReadOnlyList<State> Sources, State Accept, IReadOnlyList<State> States) { }
 }

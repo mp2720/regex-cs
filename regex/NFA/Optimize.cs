@@ -13,8 +13,7 @@ namespace Regex.NFA
                 return;
             visited.Add(state.Index);
 
-            // we don't need a buckle, but we want ε-reachable non-ε and sink
-            if (!state.IsEpsilon || state.IsSink)
+            if (!state.IsEpsilon || state.Accept)
                 traversedPathEndings.Add(state);
 
             if (state.IsEpsilon)
@@ -23,7 +22,7 @@ namespace Regex.NFA
         }
 
         /// <summary>
-        /// Find all paths O,e1,...,en,T, where O is the origin, e1,...,en - ε-states, T - non-ε or sink.
+        /// Find all paths O,e1,...,en,T, where O is the origin, e1,...,en - ε-states, T - non-ε or accept.
         /// </summary>
         private static void TraverseEpsilonPaths(
             List<State> traversedPathEndings,
@@ -36,9 +35,6 @@ namespace Regex.NFA
 
         public static Automaton Optimize(Automaton nfa)
         {
-            // Each optimized state has the same index that corresponding original state had.
-            // Later optimized NFA will be reindexed.
-
             // Indexed by original NFA indices.
             // Null means state is optimized out or not processed yet.
             // Original source states are kept until the end to simplify the code.
@@ -61,7 +57,7 @@ namespace Regex.NFA
             {
                 foreach (var state in currentWave)
                 {
-                    if (state.IsSink)
+                    if (state.Accept)
                         continue;
 
                     var pathEndings = new List<State>();
@@ -122,10 +118,10 @@ namespace Regex.NFA
                 statesOpt.Add(stateOpt);
             }
 
-            var sinkOpt = statesOptTable[nfa.Sink.Index];
-            Debug.Assert(sinkOpt != null);
+            var acceptOpt = statesOptTable[nfa.Accept.Index];
+            Debug.Assert(acceptOpt != null);
 
-            return new(sourcesOpt, sinkOpt, statesOpt);
+            return new(sourcesOpt, acceptOpt, statesOpt);
         }
     }
 }

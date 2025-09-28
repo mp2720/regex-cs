@@ -58,7 +58,7 @@ namespace Regex.NFA
                 fillcolor = "fillcolor=\"#000000\"";
 
             string color = "";
-            if (state.IsSink)
+            if (state.Accept)
                 color = "color=\"#ff0000\"";
 
             string margin = "";

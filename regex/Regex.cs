@@ -89,7 +89,7 @@ namespace Regex
                 statesLen = (uint)nfa.States.Count(),
                 sourceStates = new IntPtr(sourceStates),
                 sourceStatesLen = (uint)nfa.Sources.Count,
-                sinkState = new IntPtr(&statesArr[nfa.Sink.Index])
+                acceptState = new IntPtr(&statesArr[nfa.Accept.Index])
             };
 
             var err = NativeAPI.rcs_scanner_init(out scannerPtr, new IntPtr(nativeNFA));

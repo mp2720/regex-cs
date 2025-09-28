@@ -45,7 +45,7 @@ namespace Regex.Runtime
             public uint statesLen; // rcs_api_size
             public IntPtr sourceStates; // struct rcs_nfa_state*
             public uint sourceStatesLen; // rcs_api_size
-            public IntPtr sinkState; // struct rcs_nfa_state*
+            public IntPtr acceptState; // struct rcs_nfa_state*
         };
 
         public delegate uint Read(IntPtr arg); // rcs_api_size (*)(void *arg)

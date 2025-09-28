@@ -45,12 +45,12 @@ struct rcs_nfa_char_range {
 };
 
 struct rcs_nfa_state {
-    // Only the sink state may have an empty next list.
+    // Only the accepting state may have an empty next list.
     struct rcs_nfa_state **next;
     rcs_api_size next_len;
 
     // ε-states have empty ranges.
-    // Only the sink state is ε.
+    // Only the accepting state is ε.
     struct rcs_nfa_char_range *ranges;
     rcs_api_size ranges_len;
 
@@ -65,7 +65,7 @@ struct rcs_nfa {
     rcs_api_size sources_len;
 
     // Must be an ε-state.
-    struct rcs_nfa_state *sink;
+    struct rcs_nfa_state *accept;
 };
 
 struct rcs_reader {

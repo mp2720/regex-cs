@@ -18,9 +18,9 @@ static bool rcs_nfa_state_is_epsilon(const struct rcs_nfa_state *state) {
     return state->ranges_len == 0 && !state->inverted_match;
 }
 
-// No outgoing transitions => sink.
-// Or check if address is equal to the `nfa.sink`.
-static bool rcs_nfa_state_is_sink(const struct rcs_nfa_state *state) {
+// No outgoing transitions => accept.
+// Or check if address is equal to the `nfa.accept`.
+static bool rcs_nfa_state_is_accept(const struct rcs_nfa_state *state) {
     return state->next_len == 0;
 }
 
