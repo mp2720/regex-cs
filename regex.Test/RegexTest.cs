@@ -60,7 +60,13 @@ public class UnitTest1
         Assert.Throws<ParsingException>(() => new CompiledRegex("a+\\!junk!!!!"));
     }
 
-    private void CompareWithDotNETRegex(
+    /// <summary>
+    /// Run tests on all words from S* language (S = alphabet).
+    /// Switching reuseCompiled flag help find more bugs in runtime code.
+    /// This method also tests code for bugs caused by passing unpinned or GCed addresses to runtime,
+    /// since it repeatedly allocates and throws away a lot of arrays for caching S* words generation.
+    /// </summary>
+    private void CompareWithDotNETRegexOnKleeneClosure(
         string re,
         bool reuseCompiled,
         string dotNetRe,
@@ -79,7 +85,6 @@ public class UnitTest1
 
 
             var ws = System.Text.Encoding.UTF8.GetString(w);
-            // Console.WriteLine(ws);
 
             var dotNetMatch = dotNetCRe.Match(ws);
             Assert.True(dotNetMatch.Success == cre.Match(w), $"'{re}' != '{dotNetRe}' on '{ws}'");
@@ -91,7 +96,7 @@ public class UnitTest1
     [InlineData(true, 12)]
     public void TestOnKleeneClosure1(bool reuseCompiled, int maxWordLen)
     {
-        CompareWithDotNETRegex(@"[^a1]|a*", reuseCompiled, @"^([^a1]|a*)$", ['a', '1', ' '], maxWordLen);
+        CompareWithDotNETRegexOnKleeneClosure(@"[^a1]|a*", reuseCompiled, @"^([^a1]|a*)$", ['a', '1', ' '], maxWordLen);
     }
 
     [Theory]
@@ -99,71 +104,22 @@ public class UnitTest1
     [InlineData(true, 12)]
     public void TestOnKleeneClosure2(bool reuseCompiled, int maxWordLen)
     {
-        CompareWithDotNETRegex(
+        CompareWithDotNETRegexOnKleeneClosure(
             @"[01]+1[01][01]", reuseCompiled,
-            @"^([01]+1[01][01])$", ['a', '1', ' '],
+            @"^([01]+1[01][01])$", ['0', '1', 'z'],
             maxWordLen
         );
     }
 
     [Theory]
     [InlineData(false, 5)]
-    [InlineData(true, 12)]
+    [InlineData(true, 11)]
     public void TestOnKleeneClosure3(bool reuseCompiled, int maxWordLen)
     {
-        CompareWithDotNETRegex(
-            @"[01]+1[01][01]", reuseCompiled,
-            @"^([01]+1[01][01])$", ['a', '1', ' '],
+        CompareWithDotNETRegexOnKleeneClosure(
+            @"(a|bc)+z", reuseCompiled,
+            @"^(a|bc)+z$", ['a', 'b', 'c'],
             maxWordLen
         );
     }
-
-    // [Fact]
-    // public void Test1()
-    // {
-    //     var cre = new CompiledRegex("[01]+1[01][01]");
-    //     cre = new CompiledRegex("([^a1]|a*)");
-    //     for (int i = 0; i < 10000; ++i)
-    //     {
-    //         var rnd = new Random();
-    //         long n = rnd.NextInt64(0, 100);
-    //         byte[] b = new byte[n];
-    //         rnd.NextBytes(b);
-    //         cre.Match(b);
-    //     }
-    // }
-
-    // [Fact]
-    // public void Test2()
-    // {
-    //     var cre = new CompiledRegex("[01]+1[01][01]");
-    //     cre = new CompiledRegex("([^a1]|a*)");
-    //     for (int i = 0; i < 10000; ++i)
-    //     {
-    //         var rnd = new Random();
-    //         long n = rnd.NextInt64(0, 100);
-    //         byte[] b = new byte[n];
-    //         rnd.NextBytes(b);
-    //         cre.Match(b);
-    //     }
-    // }
-
-    // [Fact]
-    // public void Test3()
-    // {
-
-    //     CompareWithDotNETRegex(@"[^a1]|a*", false, @"^([^a1]|a*)$", ['a', '1', ' '], 10);
-    // }
-    // [Fact]
-    // public void Test4()
-    // {
-
-    //     CompareWithDotNETRegex(@"[^a1]|a*", false, @"^([^a1]|a*)$", ['a', '1', ' '], 10);
-    // }
-    // [Fact]
-    // public void Test5()
-    // {
-
-    //     CompareWithDotNETRegex(@"[^a1]|a*", false, @"^([^a1]|a*)$", ['a', '1', ' '], 10);
-    // }
 }
