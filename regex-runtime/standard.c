@@ -47,10 +47,10 @@ static bool state_matches_char(const struct rcs_nfa_state *state, uint8_t c) {
     for (int i = 0; i < state->ranges_len; ++i) {
         const struct rcs_nfa_char_range range = state->ranges[i];
         bool in_range = range.start <= c && c <= range.end;
-        if (in_range == state->inverted_match)
-            return false;
+        if (range.start <= c && c <= range.end)
+            return !state->inverted_match;
     }
-    return true;
+    return state->inverted_match;
 }
 
 rcs_error rcs_standard_match(
@@ -58,25 +58,23 @@ rcs_error rcs_standard_match(
     struct rcs_standard_scanner *sc,
     const struct rcs_reader *reader
 ) {
-    // RCS_BREAKPOINT();
-
     int c;
     bool accepted_last_step = false;
     bool has_active_states = false;
 
+    // rcs_bitmap_clear_all(sc->states_bm[0], sc->states_bm_len);
     // activate source states
     for (size_t i = 0; i < sc->nfa->sources_len; ++i) {
-        const struct rcs_nfa_state *src = &sc->nfa->states[i];
+        const struct rcs_nfa_state *src = sc->nfa->sources[i];
         if (rcs_nfa_state_is_accept(src)) {
             // source could also be accepting
+            // remember that accept state is epsilon, so we don't add it to active states
             accepted_last_step = true;
         } else {
             has_active_states = true;
             rcs_bitmap_set(sc->states_bm[0], sc->nfa->sources[i] - sc->nfa->states);
         }
     }
-
-    // RCS_BREAKPOINT();
 
     while ((c = read_char(sc, reader)) >= 0 && has_active_states) {
         accepted_last_step = false;
