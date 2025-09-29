@@ -1,7 +1,20 @@
-.PHONY: build test
+.PHONY: runtime build test
 
-build:
-	dotnet build
+runtime:
+	make -C regex-runtime
+	sudo make -C regex-runtime install
+
+build: runtime
+	dotnet publish -c release
+
+run: runtime
+	dotnet run --project regex
+
+debug: build
+	gdb regex/bin/Release/net9.0/regex
+
+run:
+	dotnet run --project regex
 
 test:
 	dotnet test --collect:"XPlat Code Coverage"

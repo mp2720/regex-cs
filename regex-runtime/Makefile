@@ -22,4 +22,7 @@ $(LIB): $(OBJS)
 clean:
 	rm -rf $(BUILD_DIR)
 
+install: $(BUILD_DIR)
+	install $(LIB) /usr/lib/
+	
 .PHONY: all clean
