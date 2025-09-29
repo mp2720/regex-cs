@@ -7,18 +7,14 @@ runtime:
 build: runtime
 	dotnet publish -c release
 
-run: runtime
-	dotnet run --project regex
-
 debug: build
 	gdb regex/bin/Release/net9.0/regex
 
-run:
+run: runtime
 	dotnet run --project regex
+	mkdir -p vis
+	dot /tmp/regex-cs-nfa.dot -Tsvg -o vis/nfa.svg
 
-test:
-	dotnet test --collect:"XPlat Code Coverage"
-	pycobertura show \
-		 regex.Test/TestResults/$(shell ls -t regex.Test/TestResults | head -n1)/coverage.cobertura.xml \
-		-f html -o regex.Test/coverage.html -p ${HOME}/proj/regex-cs/regex/
+test: runtime
+	dotnet test -l 'console;verbosity=detailed'
 	
