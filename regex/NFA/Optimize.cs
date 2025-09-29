@@ -120,6 +120,7 @@ namespace Regex.NFA
 
             var acceptOpt = statesOptTable[nfa.Accept.Index];
             Debug.Assert(acceptOpt != null);
+            acceptOpt.Accept = true;
 
             return new(sourcesOpt, acceptOpt, statesOpt);
         }

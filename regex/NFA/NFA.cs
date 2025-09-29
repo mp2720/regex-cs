@@ -7,6 +7,8 @@ namespace Regex.NFA
     {
         public CharRange(char start, char end)
             : this(checked((byte)start), checked((byte)end)) { }
+
+        public bool Matches(byte c) => Start <= c && c <= End;
     }
 
     public record CharClass(IReadOnlyList<CharRange> Ranges, bool Inverted = false)
@@ -14,8 +16,11 @@ namespace Regex.NFA
         public static CharClass All()
             => new([], true);
 
-        public static CharClass SingleChar(char c)
+        public static CharClass SingleChar(byte c)
             => new([new(c, c)]);
+
+        public static CharClass SingleChar(char c)
+            => SingleChar((byte)c);
 
         public static CharClass List(params char[] chs)
         {
@@ -30,6 +35,9 @@ namespace Regex.NFA
         /// </summary>
         public CharClass Invert()
             => new(Ranges, !Inverted);
+
+        public bool Matches(byte c)
+            => Ranges.All(rng => rng.Matches(c)) == !Inverted;
     }
 
     /// <summary>

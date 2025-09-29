@@ -10,7 +10,7 @@ namespace Regex.NFA
                 '\"' => "\\\\",
                 '\r' => "\\\\r",
                 '\n' => "\\\\n",
-                _ when '\x20' <= c && c <= '\x7e' => c.ToString(),
+                _ when '\x20' <= c && c <= '\x7e' => ((char)c).ToString(),
                 _ => $"\\\\x{(int)c:x2}"
             };
 
