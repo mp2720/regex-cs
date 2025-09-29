@@ -80,8 +80,8 @@ namespace Regex
             var sourceStates = (NativeAPI.State**)Marshal
                 .AllocHGlobal(nfa.Sources.Count * sizeof(NativeAPI.State)).ToPointer();
             int sourceStateIndex = 0;
-            foreach (var state in nfa.States)
-                sourceStates[sourceStateIndex++] = &statesArr[state.Index];
+            foreach (var source in nfa.Sources)
+                sourceStates[sourceStateIndex++] = &statesArr[source.Index];
 
             *nativeNFA = new()
             {
@@ -107,6 +107,11 @@ namespace Regex
             if (inputReader.Exception != null)
                 throw inputReader.Exception;
             return ok != 0;
+        }
+
+        public bool Match(byte[] bytes)
+        {
+            return Match(new ByteArrayReader(bytes));
         }
 
         public void Dispose()
