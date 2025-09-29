@@ -11,9 +11,9 @@ rcs_error rcs_standard_scanner_init(struct rcs_standard_scanner *s, const struct
 
     s->nfa = nfa;
 
-    s->states_bm_len = RCS_BITMAP_LEN_BYTES(nfa->states_len);
+    s->states_bm_len = RCS_BITMAP_LEN_WORDS(nfa->states_len);
     for (size_t i = 0; i < 2; ++i) {
-        s->states_bm[i] = calloc(s->states_bm_len, sizeof(*s->states_bm[i]) * s->states_bm_len);
+        s->states_bm[i] = malloc(s->states_bm_len * sizeof(*s->states_bm[i]));
         if (s->states_bm[i] == NULL)
             goto malloc_err;
     }
@@ -58,11 +58,14 @@ rcs_error rcs_standard_match(
     struct rcs_standard_scanner *sc,
     const struct rcs_reader *reader
 ) {
-    int c;
     bool accepted_last_step = false;
     bool has_active_states = false;
 
-    // rcs_bitmap_clear_all(sc->states_bm[0], sc->states_bm_len);
+    sc->input_buf_len = 0;
+    sc->input_buf_index = 0;
+
+    rcs_bitmap_clear_all(sc->states_bm[0], sc->states_bm_len);
+    rcs_bitmap_clear_all(sc->states_bm[1], sc->states_bm_len);
     // activate source states
     for (size_t i = 0; i < sc->nfa->sources_len; ++i) {
         const struct rcs_nfa_state *src = sc->nfa->sources[i];
@@ -76,7 +79,21 @@ rcs_error rcs_standard_match(
         }
     }
 
-    while ((c = read_char(sc, reader)) >= 0 && has_active_states) {
+    while (true) {
+        int c_or_eof = read_char(sc, reader);
+        if (c_or_eof < 0) {
+            *out_ok = accepted_last_step;
+            break;
+        }
+
+        if (!has_active_states) {
+            // no EOF, but nfa is in sink
+            *out_ok = false;
+            break;
+        }
+
+        uint8_t c = c_or_eof;
+
         accepted_last_step = false;
         has_active_states = false;
 
@@ -108,8 +125,6 @@ rcs_error rcs_standard_match(
         sc->states_bm[0] = sc->states_bm[1];
         sc->states_bm[1] = tmp;
     }
-
-    *out_ok = accepted_last_step;
 
     return RCS_OK;
 }
