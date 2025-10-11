@@ -24,4 +24,11 @@ static bool rcs_nfa_state_is_accept(const struct rcs_nfa_state *state) {
     return state->next_len == 0;
 }
 
+#if defined(__clang__) || defined(__GNUC__)
+#define RCS_NODISCARD __attribute__((__warn_unused_result__))
+#define RCS_NORETURN __attribute__((noreturn))
+#else
+#define RCS_NODISCARD
+#endif
+
 #endif
