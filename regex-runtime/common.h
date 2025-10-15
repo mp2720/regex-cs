@@ -16,13 +16,13 @@
 // ∅ => can match nothing => ε
 //
 // ~∅ => matches any char => non-ε
-static bool rcs_nfa_state_is_epsilon(const struct rcs_nfa_state *state) {
+static inline bool rcs_nfa_state_is_epsilon(const struct rcs_nfa_state *state) {
     return state->ranges_len == 0 && !state->inverted_match;
 }
 
 // No outgoing transitions => accept.
 // Or check if address is equal to the `nfa.accept`.
-static bool rcs_nfa_state_is_accept(const struct rcs_nfa_state *state) {
+static inline bool rcs_nfa_state_is_accept(const struct rcs_nfa_state *state) {
     return state->next_len == 0;
 }
 

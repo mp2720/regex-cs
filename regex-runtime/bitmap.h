@@ -1,11 +1,11 @@
 #ifndef REGEX_CS_RUNTIME_BITMAP
 #define REGEX_CS_RUNTIME_BITMAP
 
+#include "common.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
-#include "common.h"
 
 #if defined(__x86_64__)
 typedef uint64_t rcs_bitmap_word;
@@ -21,25 +21,25 @@ typedef uint32_t rcs_bitmap_word;
 
 #define RCS_BITMAP_LEN_WORDS(bits) RCS_DIV_CEILING(bits, RCS_BITMAP_WORD_BIT_WIDTH)
 
-static bool rcs_bitmap_get(const rcs_bitmap_word *bm, size_t index) {
+static inline bool rcs_bitmap_get(const rcs_bitmap_word *bm, size_t index) {
     size_t word_index = index / RCS_BITMAP_WORD_BIT_WIDTH;
     size_t bit_index = index % RCS_BITMAP_WORD_BIT_WIDTH;
     return bm[word_index] & (1 << bit_index);
 }
 
-static void rcs_bitmap_set(rcs_bitmap_word *bm, size_t index) {
+static inline void rcs_bitmap_set(rcs_bitmap_word *bm, size_t index) {
     size_t word_index = index / RCS_BITMAP_WORD_BIT_WIDTH;
     size_t bit_index = index % RCS_BITMAP_WORD_BIT_WIDTH;
     bm[word_index] |= (1 << bit_index);
 }
 
-static void rcs_bitmap_clear(rcs_bitmap_word *bm, size_t index) {
+static inline void rcs_bitmap_clear(rcs_bitmap_word *bm, size_t index) {
     size_t word_index = index / RCS_BITMAP_WORD_BIT_WIDTH;
     size_t bit_index = index % RCS_BITMAP_WORD_BIT_WIDTH;
     bm[word_index] &= ~(1 << bit_index);
 }
 
-static void rcs_bitmap_clear_all(rcs_bitmap_word *bm, size_t bm_len) {
+static inline void rcs_bitmap_clear_all(rcs_bitmap_word *bm, size_t bm_len) {
     memset(bm, 0, bm_len * sizeof *bm);
 }
 

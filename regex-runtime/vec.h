@@ -18,7 +18,7 @@ struct rcs_vec {
 };
 
 // Assign unitialized vector to this value, so `rcs_vec_free_data()` call on it won't cause an UB.
-const extern struct rcs_vec rcs_zero_vec;
+extern const struct rcs_vec rcs_zero_vec;
 
 RCS_NODISCARD
 rcs_error rcs_vec_init(struct rcs_vec *vec, size_t element_size, size_t init_capacity);
