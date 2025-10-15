@@ -5,6 +5,8 @@
 
 #define RCS_ARRAY_LEN(arr) (sizeof(arr) / sizeof(*arr))
 
+#define RCS_DIV_CEILING(x, y) (((x) + (y) - 1) / (y))
+
 #if defined(__x86_64__) || defined(__i386__)
 // Much more convenient than `raise(SIGTRAP)`.
 // GDB just shows you the exact location you placed it and not the libc code.

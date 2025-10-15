@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include "common.h"
 
 #if defined(__x86_64__)
 typedef uint64_t rcs_bitmap_word;
@@ -17,8 +18,6 @@ typedef uint32_t rcs_bitmap_word;
 #else
 typedef uint32_t rcs_bitmap_word;
 #endif
-
-#define RCS_DIV_CEILING(x, y) (((x) + (y) - 1) / (y))
 
 #define RCS_BITMAP_LEN_WORDS(bits) RCS_DIV_CEILING(bits, RCS_BITMAP_WORD_BIT_WIDTH)
 
