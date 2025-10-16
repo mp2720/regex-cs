@@ -44,9 +44,8 @@ static int read_char(struct rcs_standard_scanner *sc, const struct rcs_reader *r
 }
 
 static bool state_matches_char(const struct rcs_nfa_state *state, uint8_t c) {
-    for (int i = 0; i < state->ranges_len; ++i) {
+    for (size_t i = 0; i < state->ranges_len; ++i) {
         const struct rcs_nfa_char_range range = state->ranges[i];
-        bool in_range = range.start <= c && c <= range.end;
         if (range.start <= c && c <= range.end)
             return !state->inverted_match;
     }
