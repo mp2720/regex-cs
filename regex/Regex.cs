@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Regex.Parser;
 using Regex.Runtime;
@@ -15,14 +16,19 @@ namespace Regex
 
         // Pointer to scanner and it's pinned handle
         private readonly IntPtr scannerPtr;
-        // private GCHandle scannerHandle;
+
+        private static string errorToString(NativeAPI.Error err)
+        {
+            IntPtr strPtr = NativeAPI.rcs_strerror(err);
+            string? s = Marshal.PtrToStringUTF8(strPtr);
+            Debug.Assert(s != null);
+            return s;
+        }
 
         public unsafe CompiledRegex(string regex)
         {
             var nfa = RegexParser.WithDefaultBuiltinClasses().Convert(regex);
             nfa = NFA.Optimizer.Optimize(nfa);
-
-            // unsafe C# is awful
 
             // Count number of ranges so we can allocate a single ranges array
             int charRangesCount = 0;
@@ -94,7 +100,7 @@ namespace Regex
 
             var err = NativeAPI.rcs_scanner_init(out scannerPtr, new IntPtr(nativeNFA));
             if (!err.Ok())
-                throw new NativeAPIException(NativeAPI.rcs_strerror(err));
+                throw new NativeAPIException(errorToString(err));
         }
 
         public unsafe bool Match(Reader inputReader)
@@ -103,7 +109,7 @@ namespace Regex
             inputReader.Exception = null;
             var err = NativeAPI.rcs_match(out ok, scannerPtr, new IntPtr(inputReader.Native));
             if (!err.Ok())
-                throw new NativeAPIException(NativeAPI.rcs_strerror(err));
+                throw new NativeAPIException(errorToString(err));
             if (inputReader.Exception != null)
                 throw inputReader.Exception;
             return ok != 0;

@@ -38,6 +38,7 @@ typedef struct {
 
 rcs_api_bool rcs_failed(rcs_error err);
 
+// Returned string has static storage duration.
 const char *rcs_strerror(rcs_error error);
 
 // 8-bit char range `[start..end]` or inverse.

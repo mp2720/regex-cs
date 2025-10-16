@@ -64,7 +64,7 @@ namespace Regex.Runtime
         public static partial Error rcs_scanner_init(out IntPtr scanner, IntPtr nfa);
 
         [LibraryImport("libregex-cs-runtime.so", StringMarshalling = StringMarshalling.Utf8)]
-        public static partial String rcs_strerror(Error err);
+        public static partial IntPtr rcs_strerror(Error err);
 
         [LibraryImport("libregex-cs-runtime.so")]
         public static partial Error rcs_match(out byte out_ok, IntPtr scanner, IntPtr reader);
