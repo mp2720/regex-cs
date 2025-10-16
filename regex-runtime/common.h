@@ -2,6 +2,7 @@
 #define REGEX_CS_RUNTIME_COMMON
 
 #include "api.h"
+#include <stdbool.h>
 
 #define RCS_ARRAY_LEN(arr) (sizeof(arr) / sizeof(*arr))
 
